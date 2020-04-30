@@ -13,7 +13,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Add your extensions here -->
+        <configurationType implementation="software.mdklatt.idea.ansible.run.AnsibleConfigurationType"/>
     </extensions>
 
     <actions>
