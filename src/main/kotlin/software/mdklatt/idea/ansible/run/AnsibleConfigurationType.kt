@@ -54,7 +54,7 @@ class AnsibleConfigurationType : ConfigurationType {
      */
     override fun getConfigurationFactories(): Array<ConfigurationFactory> {
         return arrayOf(
-            GalaxyConfigurationFactory(this),
+            // GalaxyConfigurationFactory(this),
             PlaybookConfigurationFactory(this)
         )
     }

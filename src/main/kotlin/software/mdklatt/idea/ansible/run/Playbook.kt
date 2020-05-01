@@ -4,10 +4,13 @@ package software.mdklatt.idea.ansible.run
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.execution.ui.CommonProgramParametersPanel
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.ui.layout.panel
 import javax.swing.JComponent
+import javax.swing.JPasswordField
+import javax.swing.JTextField
 
 
 class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(type) {
@@ -24,7 +27,12 @@ class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFacto
 
 
 class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
-    RunConfigurationBase<RunProfileState>(project, factory, name) {
+        RunConfigurationBase<RunProfileState>(project, factory, name) {
+
+    var host: String? = null
+    var sudo: String? = null
+    var tags = listOf<String>()
+
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
      * returned from this method may also implement [com.intellij.execution.impl.CheckableRunConfigurationEditor]. The returned object
@@ -51,22 +59,37 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
 
 
 class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
-    override fun resetEditorFrom(s: PlaybookRunConfiguration) {
-        // TODO
+
+    var playbooks = TextFieldWithBrowseButton()
+    var host = JTextField()
+    var sudo = JPasswordField("")
+    var tags = JTextField()
+
+    private var settingsPanel = panel{
+        // Kotlin UI DSL: https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
+        row("Playbooks:") { playbooks() }
+        row("Host:") { host() }
+        row("Sudo password:") { sudo() }
+        row("Tags:") { tags() }
+    }
+
+    override fun resetEditorFrom(config: PlaybookRunConfiguration) {
+        // TODO: playbooks.addBrowseFolderListener()
+        host.text = config.host
+        sudo.text = config.sudo
+        tags.text = config.tags.joinToString(" ")
         return
     }
 
     override fun createEditor(): JComponent {
-        return PlaybookSettingsPanel()
+        return settingsPanel
     }
 
-    override fun applyEditorTo(s: PlaybookRunConfiguration) {
-        // TODO
+    override fun applyEditorTo(config: PlaybookRunConfiguration) {
+        // This apparently gets called for every key press.
+        config.host = host.text
+        config.sudo = sudo.password.toString()
+        config.tags = tags.text.split(" ")
         return
     }
-}
-
-
-private class PlaybookSettingsPanel : CommonProgramParametersPanel() {
-
 }
