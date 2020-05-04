@@ -14,6 +14,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <configurationType implementation="software.mdklatt.idea.ansible.run.AnsibleConfigurationType"/>
+        <programRunner implementation="software.mdklatt.idea.ansible.run.PlaybookRunner"/>
     </extensions>
 
     <actions>

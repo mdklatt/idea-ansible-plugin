@@ -3,6 +3,11 @@ package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
+import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.process.KillableColoredProcessHandler
+import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessTerminatedListener
+import com.intellij.execution.runners.DefaultProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
@@ -53,8 +58,9 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState? {
-        TODO("Not yet implemented")
+        return PlaybookCommandLineState(environment)
     }
+
 }
 
 
@@ -91,5 +97,50 @@ class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
         config.sudo = sudo.password.toString()
         config.tags = tags.text.split(" ")
         return
+    }
+}
+
+
+class PlaybookRunner : DefaultProgramRunner() {
+    /**
+     * Checks if the program runner is capable of running the specified configuration with the specified executor.
+     *
+     * @param executorId ID of the [Executor] with which the user is trying to run the configuration.
+     * @param profile the configuration being run.
+     * @return true if the runner can handle it, false otherwise.
+     */
+    override fun canRun(executorId: String, profile: RunProfile): Boolean {
+        return DefaultRunExecutor.EXECUTOR_ID == executorId && profile is PlaybookRunConfiguration
+    }
+
+    /**
+     * Returns the unique ID of this runner. This ID is used to store settings and must not change between plugin versions.
+     *
+     * @return the program runner ID.
+     */
+    override fun getRunnerId(): String {
+        return "AnsiblePlaybookRunner"
+    }
+}
+
+
+class PlaybookCommandLineState(environment: ExecutionEnvironment) : CommandLineState(environment) {
+    /**
+     * Starts the process.
+     *
+     * @return the handler for the running process
+     * @throws ExecutionException if the execution failed.
+     * @see GeneralCommandLine
+     *
+     * @see com.intellij.execution.process.OSProcessHandler
+     */
+    override fun startProcess(): ProcessHandler {
+        val cmdl = GeneralCommandLine("ansible-playbook", "--version")
+        if (!cmdl.environment.containsKey("TERM")) {
+            cmdl.environment["TERM"] = "xterm-256color"
+        }
+        val process = KillableColoredProcessHandler(cmdl)
+        ProcessTerminatedListener.attach(process, environment.project)
+        return process
     }
 }
