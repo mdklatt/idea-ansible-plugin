@@ -1,11 +1,10 @@
 <idea-plugin>
     <id>idea-ansible</id>
-    <name>Plugin display name here</name>
-    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+    <name>Ansible</name>
+    <vendor email="mdklatt@alumni.ou.edu" url="https://github.com/mdklatt/idea-ansible-plugin">Michael Klatt</vendor>
 
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+    IDEA plugin for running <a href="https://docs.ansible.com/ansible/latest/index.html">Ansible</a> commands.
     ]]></description>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
