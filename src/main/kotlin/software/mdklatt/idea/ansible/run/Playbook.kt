@@ -1,6 +1,5 @@
 package software.mdklatt.idea.ansible.run
 
-
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultRunExecutor
@@ -18,6 +17,9 @@ import javax.swing.JPasswordField
 import javax.swing.JTextField
 
 
+/**
+ * TODO
+ */
 class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(type) {
     /**
      * Creates a new template run configuration within the context of the specified project.
@@ -31,12 +33,13 @@ class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFacto
 }
 
 
+/**
+ * TODO
+ */
 class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
         RunConfigurationBase<RunProfileState>(project, factory, name) {
 
-    var host: String? = null
-    var sudo: String? = null
-    var tags = listOf<String>()
+    var settings = PlaybookRunSettings()
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
@@ -58,32 +61,41 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState? {
-        return PlaybookCommandLineState(environment)
+        return PlaybookCommandLineState(this, environment)
     }
 
 }
 
 
+/**
+ * TODO
+ */
 class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
 
+    // FIXME: Browse buttons are non-functional--addBrowseFolderListener()?
     var playbooks = TextFieldWithBrowseButton()
-    var host = JTextField()
-    var sudo = JPasswordField("")
-    var tags = JTextField()
+    var inventory = TextFieldWithBrowseButton()
+    var host = JTextField("")
+    var sudo = JPasswordField("")  // FIXME: https://www.jetbrains.org/intellij/sdk/docs/basics/persisting_sensitive_data.html
+    var tags = JTextField("")
+    var workdir = TextFieldWithBrowseButton()
 
     private var settingsPanel = panel{
         // Kotlin UI DSL: https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
+        // FIXME: IDEA 201.* has breaking changes to this API
         row("Playbooks:") { playbooks() }
+        row("Inventory:") { inventory() }
         row("Host:") { host() }
-        row("Sudo password:") { sudo() }
         row("Tags:") { tags() }
+        row("Sudo password:") { sudo() }
+        row("Working directory:") { workdir() }
     }
 
     override fun resetEditorFrom(config: PlaybookRunConfiguration) {
-        // TODO: playbooks.addBrowseFolderListener()
-        host.text = config.host
-        sudo.text = config.sudo
-        tags.text = config.tags.joinToString(" ")
+        playbooks.text = if (config.settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
+        host.text = config.settings.host
+        sudo.text = config.settings.sudo
+        tags.text = config.settings.tags.joinToString(" ")
         return
     }
 
@@ -92,15 +104,23 @@ class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
     }
 
     override fun applyEditorTo(config: PlaybookRunConfiguration) {
-        // This apparently gets called for every key press.
-        config.host = host.text
-        config.sudo = sudo.password.toString()
-        config.tags = tags.text.split(" ")
+        // This apparently gets called for every key press, so performance is
+        // critical.
+        // TODO: Get file list for playbooks and inventory.
+        config.settings.playbooks = listOf(playbooks.text)
+        config.settings.inventory = listOf(inventory.text)
+        config.settings.host = host.text
+        config.settings.sudo = sudo.password.toString()
+        config.settings.tags = tags.text.split(" ")
+        config.settings.workdir = workdir.text
         return
     }
 }
 
 
+/**
+ * TODO
+ */
 class PlaybookRunner : DefaultProgramRunner() {
     /**
      * Checks if the program runner is capable of running the specified configuration with the specified executor.
@@ -124,7 +144,10 @@ class PlaybookRunner : DefaultProgramRunner() {
 }
 
 
-class PlaybookCommandLineState(environment: ExecutionEnvironment) : CommandLineState(environment) {
+/**
+ * TODO
+ */
+class PlaybookCommandLineState(val config: PlaybookRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
     /**
      * Starts the process.
      *
@@ -135,12 +158,39 @@ class PlaybookCommandLineState(environment: ExecutionEnvironment) : CommandLineS
      * @see com.intellij.execution.process.OSProcessHandler
      */
     override fun startProcess(): ProcessHandler {
-        val cmdl = GeneralCommandLine("ansible-playbook", "--version")
-        if (!cmdl.environment.containsKey("TERM")) {
-            cmdl.environment["TERM"] = "xterm-256color"
+        val settings = config.settings
+        val command = PosixCommandLine("ansible-playbook")
+        val options = mutableMapOf<String, Any>(
+            "verbose" to true,  // TODO: user option
+            "limit" to settings.host,
+            "inventory" to settings.inventory.joinToString(","),
+            "tags" to settings.tags.joinToString(",")
+        )
+        if (settings.sudo.isNotBlank()) {
+            options["ask-become-pass"] = true
+            command.withInput(settings.workdir)
         }
-        val process = KillableColoredProcessHandler(cmdl)
+        command.addOptions(options)
+        command.addParameters(settings.playbooks)
+        if (!command.environment.containsKey("TERM")) {
+            command.environment["TERM"] = "xterm-256color"
+        }
+        command.withWorkDirectory(settings.workdir)
+        val process = KillableColoredProcessHandler(command)
         ProcessTerminatedListener.attach(process, environment.project)
         return process
     }
+}
+
+/**
+ * Manage PlaybookRunConfiguration runtime settings.
+ */
+class PlaybookRunSettings {
+    // TODO: Could just be a Map<String, Any>.
+    var playbooks = emptyList<String>()
+    var inventory = emptyList<String>()
+    var host = ""
+    var sudo = ""
+    var tags = emptyList<String>()
+    var workdir = ""
 }
