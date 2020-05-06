@@ -3,7 +3,7 @@ Ansible IDEA Plugin
 ###################
 
 .. _travis: https://travis-ci.org/mdklatt/idea-ansible-plugin
-.. |badge| image:: https://travis-ci.org/mdklatt/idea-ansible-plugin
+.. |badge| image:: https://travis-ci.org/mdklatt/idea-ansible-plugin.png
    :alt: Travis CI build status
    :target: `travis`_
 
