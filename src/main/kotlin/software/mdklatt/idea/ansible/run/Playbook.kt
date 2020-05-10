@@ -90,11 +90,18 @@ class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
         row("Working directory:") { workdir() }
     }
 
+    /**
+     * Reset editor fields from the saved configuration state.
+     *
+     * @param config: run configuration
+     */
     override fun resetEditorFrom(config: PlaybookRunConfiguration) {
         playbooks.text = if (config.settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
+        inventory.text = if (config.settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
         host.text = config.settings.host
         sudo.text = config.settings.sudo
         tags.text = config.settings.tags.joinToString(" ")
+        workdir.text = config.settings.workdir
         return
     }
 
