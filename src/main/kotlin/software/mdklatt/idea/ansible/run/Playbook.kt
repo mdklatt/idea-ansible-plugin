@@ -186,10 +186,12 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
         command.addOptions(options)
         command.addParameters(config.settings.options)
         command.addParameters(settings.playbooks)
-        if (!command.environment.containsKey("TERM")) {
+        if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
         }
-        command.withWorkDirectory(settings.workdir)
+        if (settings.workdir.isNotBlank()) {
+            command.withWorkDirectory(settings.workdir)
+        }
         val process = KillableColoredProcessHandler(command)
         ProcessTerminatedListener.attach(process, environment.project)
         return process
