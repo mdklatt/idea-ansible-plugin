@@ -1,0 +1,7 @@
+---
+- name: Test play for the idea-ansible plugin.
+  hosts: all
+
+  tasks:
+    - name: Contact the host
+      ping:

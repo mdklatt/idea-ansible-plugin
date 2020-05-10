@@ -1,0 +1,8 @@
+# Ignore Ansible files. Installed roles are ignored except for those that are
+# local to this project.
+
+*.retry
+.galaxy_install_info
+roles/*
+!roles
+!roles/main
