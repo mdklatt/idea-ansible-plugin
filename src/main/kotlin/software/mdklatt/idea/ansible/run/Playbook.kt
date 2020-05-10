@@ -8,6 +8,8 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.DefaultProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.fileChooser.FileChooserDescriptor
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
@@ -50,7 +52,7 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
      * @return the settings editor component.
      */
     override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
-        return PlaybookSettingsEditor()
+        return PlaybookSettingsEditor(project)
     }
 
     /**
@@ -70,9 +72,8 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
 /**
  * TODO
  */
-class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
+class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfiguration>() {
 
-    // FIXME: Browse buttons are non-functional--addBrowseFolderListener()?
     var playbooks = TextFieldWithBrowseButton()
     var inventory = TextFieldWithBrowseButton()
     var host = JTextField("")
@@ -80,8 +81,16 @@ class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
     var tags = JTextField("")
     var workdir = TextFieldWithBrowseButton()
 
+    init {
+        val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
+        playbooks.addBrowseFolderListener("Playbooks", "", project, fileChooser)
+        inventory.addBrowseFolderListener("Inventory", "", project, fileChooser)
+        val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
+        workdir.addBrowseFolderListener("Working Directory", "", project, dirChooser)
+    }
+
     private var settingsPanel = panel{
-        // Kotlin UI DSL: https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
+        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
         row("Playbooks:") { playbooks() }
         row("Inventory:") { inventory() }
         row("Host:") { host() }
@@ -127,7 +136,7 @@ class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
 /**
  * TODO
  */
-class PlaybookRunner : DefaultProgramRunner() {
+class PlaybookRunner : DefaultProgramRunner() {  // FIXME: deprecation
     /**
      * Checks if the program runner is capable of running the specified configuration with the specified executor.
      *
@@ -153,7 +162,7 @@ class PlaybookRunner : DefaultProgramRunner() {
 /**
  * TODO
  */
-class PlaybookCommandLineState(val config: PlaybookRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
+class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
     /**
      * Starts the process.
      *
@@ -173,6 +182,7 @@ class PlaybookCommandLineState(val config: PlaybookRunConfiguration, environment
             "tags" to settings.tags.joinToString(",")
         )
         if (settings.sudo.isNotBlank()) {
+            // FIXME: Ansible reports "Bad sudo password" no matter what.
             options["ask-become-pass"] = true
             command.withInput(settings.workdir)
         }
