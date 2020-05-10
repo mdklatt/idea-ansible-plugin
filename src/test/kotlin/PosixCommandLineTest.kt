@@ -17,6 +17,7 @@ class PosixCommandLineTest {
         "on" to true,
         "off" to false,
         "null" to null,
+        "blank" to "",
         "int" to 123,
         "str" to "abc"
     )
@@ -27,7 +28,7 @@ class PosixCommandLineTest {
     @Test
     fun testCtor() {
         val command = PosixCommandLine("test", aruments, options)
-        assertEquals("test --on --int 123 --str abc pos1 pos2", command.commandLineString)
+        assertEquals("test --on --blank \"\" --int 123 --str abc pos1 pos2", command.commandLineString)
     }
 
     /**
@@ -37,7 +38,7 @@ class PosixCommandLineTest {
     fun testAddOptions() {
         val command = PosixCommandLine("test")
         assertNotNull(command.addOptions(options))
-        assertEquals("test --on --int 123 --str abc", command.commandLineString)
+        assertEquals("test --on --blank \"\" --int 123 --str abc", command.commandLineString)
     }
 
     /**
