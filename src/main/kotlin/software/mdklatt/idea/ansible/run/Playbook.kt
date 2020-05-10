@@ -82,7 +82,6 @@ class PlaybookSettingsEditor : SettingsEditor<PlaybookRunConfiguration>() {
 
     private var settingsPanel = panel{
         // Kotlin UI DSL: https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
-        // FIXME: IDEA 201.* has breaking changes to this API
         row("Playbooks:") { playbooks() }
         row("Inventory:") { inventory() }
         row("Host:") { host() }
