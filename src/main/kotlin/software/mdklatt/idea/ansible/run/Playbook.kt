@@ -12,6 +12,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.layout.panel
 import javax.swing.JComponent
 import javax.swing.JTextField
@@ -76,7 +77,8 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
     var inventory = TextFieldWithBrowseButton()
     var host = JTextField("")
     var tags = JTextField("")
-    var workdir = TextFieldWithBrowseButton()
+    var options = RawCommandLineEditor()
+    var workdir = TextFieldWithBrowseButton()  // TODO: default to project directory
 
     init {
         val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
@@ -92,6 +94,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         row("Inventory:") { inventory() }
         row("Host:") { host() }
         row("Tags:") { tags() }
+        row("Raw options:") { options() }
         row("Working directory:") { workdir() }
     }
 
@@ -105,6 +108,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         inventory.text = if (config.settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
         host.text = config.settings.host
         tags.text = config.settings.tags.joinToString(" ")
+        options.text = config.settings.options.joinToString("")
         workdir.text = config.settings.workdir
         return
     }
@@ -120,7 +124,8 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         config.settings.playbooks = listOf(playbooks.text)
         config.settings.inventory = listOf(inventory.text)
         config.settings.host = host.text
-        config.settings.tags = tags.text.split(" ")
+        config.settings.tags = if (tags.text.isNotBlank()) tags.text.split(" ") else emptyList()
+        config.settings.options = if (options.text.isNotBlank()) options.text.split(" ") else emptyList()
         config.settings.workdir = workdir.text
         return
     }
@@ -167,15 +172,19 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
      * @see com.intellij.execution.process.OSProcessHandler
      */
     override fun startProcess(): ProcessHandler {
+        fun nullBlank(str: String): String? {
+            return if (str.isNotBlank()) str else null
+        }
         val settings = config.settings
         val command = PosixCommandLine("ansible-playbook")
-        val options = mutableMapOf<String, Any>(
+        val options = mutableMapOf<String, Any?>(
             "verbose" to true,  // TODO: user option
-            "limit" to settings.host,
-            "inventory" to settings.inventory.joinToString(","),
-            "tags" to settings.tags.joinToString(",")
+            "limit" to nullBlank(settings.host),
+            "inventory" to nullBlank(settings.inventory.joinToString(",")),
+            "tags" to nullBlank(settings.tags.joinToString(","))
         )
         command.addOptions(options)
+        command.addParameters(config.settings.options)
         command.addParameters(settings.playbooks)
         if (!command.environment.containsKey("TERM")) {
             command.environment["TERM"] = "xterm-256color"
@@ -197,5 +206,6 @@ class PlaybookRunSettings {
     var inventory = emptyList<String>()
     var host = ""
     var tags = emptyList<String>()
+    var options = emptyList<String>()
     var workdir = ""
 }
