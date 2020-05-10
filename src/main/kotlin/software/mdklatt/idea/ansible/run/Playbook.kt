@@ -8,15 +8,12 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.DefaultProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.layout.panel
 import javax.swing.JComponent
-import javax.swing.JPasswordField
 import javax.swing.JTextField
 
 
@@ -78,7 +75,6 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
     var playbooks = TextFieldWithBrowseButton()
     var inventory = TextFieldWithBrowseButton()
     var host = JTextField("")
-    var sudo = JPasswordField("")  // FIXME: https://www.jetbrains.org/intellij/sdk/docs/basics/persisting_sensitive_data.html
     var tags = JTextField("")
     var workdir = TextFieldWithBrowseButton()
 
@@ -96,7 +92,6 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         row("Inventory:") { inventory() }
         row("Host:") { host() }
         row("Tags:") { tags() }
-        row("Sudo password:") { sudo() }
         row("Working directory:") { workdir() }
     }
 
@@ -109,7 +104,6 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         playbooks.text = if (config.settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
         inventory.text = if (config.settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
         host.text = config.settings.host
-        sudo.text = config.settings.sudo
         tags.text = config.settings.tags.joinToString(" ")
         workdir.text = config.settings.workdir
         return
@@ -126,7 +120,6 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         config.settings.playbooks = listOf(playbooks.text)
         config.settings.inventory = listOf(inventory.text)
         config.settings.host = host.text
-        config.settings.sudo = sudo.password.toString()
         config.settings.tags = tags.text.split(" ")
         config.settings.workdir = workdir.text
         return
@@ -182,11 +175,6 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
             "inventory" to settings.inventory.joinToString(","),
             "tags" to settings.tags.joinToString(",")
         )
-        if (settings.sudo.isNotBlank()) {
-            // FIXME: Ansible reports "Bad sudo password" no matter what.
-            options["ask-become-pass"] = true
-            command.withInput(settings.workdir)
-        }
         command.addOptions(options)
         command.addParameters(settings.playbooks)
         if (!command.environment.containsKey("TERM")) {
@@ -199,6 +187,7 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
     }
 }
 
+
 /**
  * Manage PlaybookRunConfiguration runtime settings.
  */
@@ -207,7 +196,6 @@ class PlaybookRunSettings {
     var playbooks = emptyList<String>()
     var inventory = emptyList<String>()
     var host = ""
-    var sudo = ""
     var tags = emptyList<String>()
     var workdir = ""
 }
