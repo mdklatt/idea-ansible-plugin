@@ -77,6 +77,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
     var inventory = TextFieldWithBrowseButton()
     var host = JTextField("")
     var tags = JTextField("")
+    var variables = JTextField("")
     var options = RawCommandLineEditor()
     var workdir = TextFieldWithBrowseButton()  // TODO: default to project directory
 
@@ -94,6 +95,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         row("Inventory:") { inventory() }
         row("Host:") { host() }
         row("Tags:") { tags() }
+        row("Extra variables:") { variables() }
         row("Raw options:") { options() }
         row("Working directory:") { workdir() }
     }
@@ -108,6 +110,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         inventory.text = if (config.settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
         host.text = config.settings.host
         tags.text = config.settings.tags.joinToString(" ")
+        variables.text = config.settings.variables.joinToString(" ")
         options.text = config.settings.options.joinToString("")
         workdir.text = config.settings.workdir
         return
@@ -125,6 +128,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         config.settings.inventory = listOf(inventory.text)
         config.settings.host = host.text
         config.settings.tags = if (tags.text.isNotBlank()) tags.text.split(" ") else emptyList()
+        config.settings.variables = if (variables.text.isNotBlank()) variables.text.split(" ") else emptyList()
         config.settings.options = if (options.text.isNotBlank()) options.text.split(" ") else emptyList()
         config.settings.workdir = workdir.text
         return
@@ -181,7 +185,8 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
             "verbose" to true,  // TODO: user option
             "limit" to nullBlank(settings.host),
             "inventory" to nullBlank(settings.inventory.joinToString(",")),
-            "tags" to nullBlank(settings.tags.joinToString(","))
+            "tags" to nullBlank(settings.tags.joinToString(",")),
+            "extra-vars" to nullBlank(settings.variables.joinToString(" "))
         )
         command.addOptions(options)
         command.addParameters(config.settings.options)
@@ -207,7 +212,8 @@ class PlaybookRunSettings {
     var playbooks = emptyList<String>()
     var inventory = emptyList<String>()
     var host = ""
-    var tags = emptyList<String>()
+    var tags = emptyList<String>()  // TODO: Set
+    var variables = emptyList<String>()  // TODO: Set
     var options = emptyList<String>()
     var workdir = ""
 }
