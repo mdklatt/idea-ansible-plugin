@@ -12,8 +12,10 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.layout.panel
+import org.jdom.Element
 import javax.swing.JComponent
 import javax.swing.JTextField
 
@@ -65,6 +67,31 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
         return PlaybookCommandLineState(this, environment)
     }
 
+    /**
+     * Read settings from a JDOM element.
+     *
+     * This is part of the RunConfiguration persistence API.
+     *
+     * @param element: input element.
+     */
+    override fun readExternal(element: Element) {
+        super.readExternal(element)
+        settings.read(element)
+        return
+    }
+
+    /**
+     * Write settings to a JDOM element.
+     *
+     * This is part of the RunConfiguration persistence API.
+
+     * @param element: output element.
+     */
+    override fun writeExternal(element: Element) {
+        super.writeExternal(element)
+        settings.write(element)
+        return
+    }
 }
 
 
@@ -213,7 +240,12 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
  * Manage PlaybookRunConfiguration runtime settings.
  */
 class PlaybookRunSettings {
-    var playbooks = emptyList<String>()
+
+    companion object {
+        private const val DELIMIT = "|"
+    }
+
+    var playbooks = emptyList<String>()  // TODO: add set() for [""] -> []
     var inventory = emptyList<String>()
     var host = ""
     var tags = emptyList<String>()  // TODO: Set
@@ -222,4 +254,41 @@ class PlaybookRunSettings {
         get() = if (field.isNotBlank()) field else "ansible-playbook"
     var options = emptyList<String>()
     var workdir = ""
+
+    /**
+     * Reading settings from a JDOM element.
+     *
+     * @param element: input element.
+     */
+    fun read(element: Element) {
+        playbooks = JDOMExternalizerUtil.readField(element, "playbooks", "").split(DELIMIT)
+        inventory = JDOMExternalizerUtil.readField(element, "inventory", "").split(DELIMIT)
+        host = JDOMExternalizerUtil.readField(element, "host", "")
+        tags = JDOMExternalizerUtil.readField(element, "tags", "").split(DELIMIT)
+        variables = JDOMExternalizerUtil.readField(element, "variables", "").split(DELIMIT)
+        host = JDOMExternalizerUtil.readField(element, "host", "")
+        command = JDOMExternalizerUtil.readField(element, "command", "")
+        options = JDOMExternalizerUtil.readField(element, "options", "").split(DELIMIT)
+        workdir = JDOMExternalizerUtil.readField(element, "workDir", "")
+        return
+    }
+
+    /**
+     * Write settings to a JDOM element.
+     *
+     * @param element: output element
+     */
+    fun write(element: Element) {
+        // Value isn't written if it matches the given default.
+        JDOMExternalizerUtil.writeField(element, "playbooks", playbooks.joinToString(DELIMIT), "")
+        JDOMExternalizerUtil.writeField(element, "inventory", inventory.joinToString(DELIMIT), "")
+        JDOMExternalizerUtil.writeField(element, "host", host, "")
+        JDOMExternalizerUtil.writeField(element, "tags", tags.joinToString(DELIMIT), "")
+        JDOMExternalizerUtil.writeField(element, "variables", variables.joinToString(DELIMIT), "")
+        JDOMExternalizerUtil.writeField(element, "host", host, "")
+        JDOMExternalizerUtil.writeField(element, "command", command, "")
+        JDOMExternalizerUtil.writeField(element, "options", options.joinToString(DELIMIT), "")
+        JDOMExternalizerUtil.writeField(element, "workDir", workdir, "")
+        return
+    }
 }
