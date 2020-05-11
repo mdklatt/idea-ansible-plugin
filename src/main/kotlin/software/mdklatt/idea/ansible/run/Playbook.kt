@@ -79,12 +79,14 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
     var tags = JTextField("")
     var variables = JTextField("")
     var options = RawCommandLineEditor()
-    var workdir = TextFieldWithBrowseButton()  // TODO: default to project directory
+    var command = TextFieldWithBrowseButton()
+    var workdir = TextFieldWithBrowseButton()
 
     init {
         val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
         playbooks.addBrowseFolderListener("Playbooks", "", project, fileChooser)
         inventory.addBrowseFolderListener("Inventory", "", project, fileChooser)
+        command.addBrowseFolderListener("Playbook Command", "", project, fileChooser)
         val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
         workdir.addBrowseFolderListener("Working Directory", "", project, dirChooser)
     }
@@ -97,6 +99,8 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         row("Tags:") { tags() }
         row("Extra variables:") { variables() }
         row("Raw options:") { options() }
+        titledRow("Ansible Settings") {}
+        row("Playbook command:") { command() }
         row("Working directory:") { workdir() }
     }
 
@@ -111,6 +115,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         host.text = config.settings.host
         tags.text = config.settings.tags.joinToString(" ")
         variables.text = config.settings.variables.joinToString(" ")
+        command.text = config.settings.command
         options.text = config.settings.options.joinToString("")
         workdir.text = config.settings.workdir
         return
@@ -180,7 +185,7 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
             return if (str.isNotBlank()) str else null
         }
         val settings = config.settings
-        val command = PosixCommandLine("ansible-playbook")
+        val command = PosixCommandLine(settings.command)
         val options = mutableMapOf<String, Any?>(
             "verbose" to true,  // TODO: user option
             "limit" to nullBlank(settings.host),
@@ -208,12 +213,13 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
  * Manage PlaybookRunConfiguration runtime settings.
  */
 class PlaybookRunSettings {
-    // TODO: Could just be a Map<String, Any>.
     var playbooks = emptyList<String>()
     var inventory = emptyList<String>()
     var host = ""
     var tags = emptyList<String>()  // TODO: Set
     var variables = emptyList<String>()  // TODO: Set
+    var command = ""
+        get() = if (field.isNotBlank()) field else "ansible-playbook"
     var options = emptyList<String>()
     var workdir = ""
 }
