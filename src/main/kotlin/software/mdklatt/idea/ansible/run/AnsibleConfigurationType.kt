@@ -4,6 +4,7 @@ package software.mdklatt.idea.ansible.run
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.ConfigurationType
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.util.IconLoader
 import javax.swing.Icon
 
 
@@ -11,10 +12,12 @@ class AnsibleConfigurationType : ConfigurationType {
     /**
      * Returns the 16x16 icon used to represent the configuration type.
      *
-     * @return the icon
+     * @return: the icon
      */
     override fun getIcon(): Icon {
-        return AllIcons.General.GearPlain
+        // https://www.jetbrains.org/intellij/sdk/docs/reference_guide/work_with_icons_and_images.html
+        val url = this.javaClass.classLoader.getResource("icons/ansibleMango.svg")
+        return IconLoader.findIcon(url, true) ?: AllIcons.General.GearPlain
     }
 
     /**
@@ -54,7 +57,7 @@ class AnsibleConfigurationType : ConfigurationType {
      */
     override fun getConfigurationFactories(): Array<ConfigurationFactory> {
         return arrayOf(
-            // GalaxyConfigurationFactory(this),
+            // TODO: GalaxyConfigurationFactory(this),
             PlaybookConfigurationFactory(this)
         )
     }

@@ -2,18 +2,12 @@
 Ansible IDEA Plugin
 ###################
 
-.. _travis: https://travis-ci.org/mdklatt/idea-ansible-plugin
-.. |badge| image:: https://travis-ci.org/mdklatt/idea-ansible-plugin.png
-   :alt: Travis CI build status
-   :target: `travis`_
+|travis|
 
-|badge|
+Run `Ansible`_ commands within a `JetBrains`_ IDE like IntelliJ or PyCharm.
 
-.. _Ansible: https://docs.ansible.com/ansible/latest/index.html
-.. _Galaxy: https://galaxy.ansible.com
-.. _JetBrains: https://www.jetbrains.com
 
-Run `Ansible`_ within a `JetBrains`_ IDE like IntelliJ or PyCharm.
+`Ansible logo`_ |copy| RedHat, Inc.
 
 
 ===============
@@ -50,3 +44,15 @@ Installation
 
 Use *Preferences->Plugins->Install Plugin from Disk...* to install a local
 copy of the plugin JAR file.
+
+
+.. _travis: https://travis-ci.org/mdklatt/idea-ansible-plugin
+.. _Ansible: https://docs.ansible.com/ansible/latest/index.html
+.. _Ansible logo: https://www.ansible.com/logos
+.. _Galaxy: https://galaxy.ansible.com
+.. _JetBrains: https://www.jetbrains.com
+
+.. |copy| unicode:: U+000A9 .. COPYRIGHT SIGN
+.. |travis| image:: https://travis-ci.org/mdklatt/idea-ansible-plugin.png
+   :alt: Travis CI build status
+   :target: `travis`_
