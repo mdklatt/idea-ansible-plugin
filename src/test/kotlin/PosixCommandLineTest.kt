@@ -23,6 +23,16 @@ class PosixCommandLineTest {
     )
 
     /**
+     * Test the join() method.
+     */
+    @Test
+    fun testJoin() {
+        val argv = listOf("one", " two  \"three\"")
+        val args = "one \" two  \"\"three\"\"\""
+        assertEquals(args, PosixCommandLine.join(argv))
+    }
+
+    /**
      * Test the split() method.
      */
     @Test

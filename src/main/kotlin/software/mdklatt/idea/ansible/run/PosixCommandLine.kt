@@ -3,6 +3,7 @@ package software.mdklatt.idea.ansible.run
 import com.intellij.execution.configurations.GeneralCommandLine
 import org.apache.commons.text.StringTokenizer
 import org.apache.commons.text.matcher.StringMatcherFactory
+import java.lang.StringBuilder
 
 
 /**
@@ -19,6 +20,37 @@ class PosixCommandLine(
 ) : GeneralCommandLine() {
 
     companion object {
+        private val quoteMatch = StringMatcherFactory.INSTANCE.quoteMatcher()
+        private val splitMatch = StringMatcherFactory.INSTANCE.splitMatcher()
+
+        /**
+         * Join command line arguments using shell syntax
+         *
+         * Arguments containing whitespace are quoted, and quote literals are
+         * escaped.
+         */
+        fun join(argv: List<String>): String {
+            val quote = '"'
+            val _argv = argv.toMutableList()
+            val it = _argv.listIterator()
+            while (it.hasNext()) {
+                val str = StringBuilder()
+                for (char in it.next()) {
+                    str.append(char)
+                    if (char == quote) {
+                        // Use repeated character to escape quote literal.
+                        str.append(char)
+                    }
+                }
+                var arg = str.toString()
+                if (splitMatch.isMatch(arg.toCharArray(), 0, 0, arg.lastIndex) > 0) {
+                    arg = quote + arg + quote
+                }
+                it.set(arg)
+            }
+            return _argv.joinToString(" ")
+        }
+
         /**
          * Split command line arguments using shell syntax.
          *
@@ -29,10 +61,8 @@ class PosixCommandLine(
          * @return: sequence of arguments
          */
         fun split(args: String): List<String> {
-            val delim = StringMatcherFactory.INSTANCE.splitMatcher()
-            val quote = StringMatcherFactory.INSTANCE.quoteMatcher()
-            val parser = StringTokenizer(args, delim, quote)
-            return parser.tokenList
+            val splitter = StringTokenizer(args, splitMatch, quoteMatch)
+            return splitter.tokenList
         }
     }
 

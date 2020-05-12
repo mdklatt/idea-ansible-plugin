@@ -143,7 +143,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         tags.text = config.settings.tags.joinToString(" ")
         variables.text = config.settings.variables.joinToString(" ")
         command.text = config.settings.command
-        options.text = config.settings.options.joinToString("")
+        options.text = PosixCommandLine.join(config.settings.options)
         workdir.text = config.settings.workdir
         return
     }
