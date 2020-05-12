@@ -23,6 +23,16 @@ class PosixCommandLineTest {
     )
 
     /**
+     * Test the split() method.
+     */
+    @Test
+    fun testSplit() {
+        val args = "one\t\n\r \" two  \"\"three\"\"\""
+        val argv = listOf("one", " two  \"three\"")
+        assertEquals(argv, PosixCommandLine.split(args))
+    }
+
+    /**
      * Test the constructor.
      */
     @Test

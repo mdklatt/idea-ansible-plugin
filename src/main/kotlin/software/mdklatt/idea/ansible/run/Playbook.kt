@@ -161,7 +161,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         config.settings.host = host.text
         config.settings.tags = if (tags.text.isNotBlank()) tags.text.split(" ") else emptyList()
         config.settings.variables = if (variables.text.isNotBlank()) variables.text.split(" ") else emptyList()
-        config.settings.options = if (options.text.isNotBlank()) options.text.split(" ") else emptyList()
+        config.settings.options = if (options.text.isNotBlank()) PosixCommandLine.split(options.text) else emptyList()
         config.settings.workdir = workdir.text
         return
     }

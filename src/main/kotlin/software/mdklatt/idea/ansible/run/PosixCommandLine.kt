@@ -1,6 +1,8 @@
 package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import org.apache.commons.text.StringTokenizer
+import org.apache.commons.text.matcher.StringMatcherFactory
 
 
 /**
@@ -15,6 +17,24 @@ class PosixCommandLine(
     arguments: List<String> = emptyList(),
     options: Map<String, Any?> = emptyMap()
 ) : GeneralCommandLine() {
+
+    companion object {
+        /**
+         * Split command line arguments using shell syntax.
+         *
+         * Arguments are split on whitespace. Quoted whitespace is preserved.
+         * A repeated quote character is interpreted as a quote literal.
+         *
+         * @param args: argument expression to split
+         * @return: sequence of arguments
+         */
+        fun split(args: String): List<String> {
+            val delim = StringMatcherFactory.INSTANCE.splitMatcher()
+            val quote = StringMatcherFactory.INSTANCE.quoteMatcher()
+            val parser = StringTokenizer(args, delim, quote)
+            return parser.tokenList
+        }
+    }
 
     init {
         withExePath(exePath)
