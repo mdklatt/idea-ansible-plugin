@@ -159,9 +159,9 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         config.settings.playbooks = listOf(playbooks.text)
         config.settings.inventory = listOf(inventory.text)
         config.settings.host = host.text
-        config.settings.tags = if (tags.text.isNotBlank()) tags.text.split(" ") else emptyList()
-        config.settings.variables = if (variables.text.isNotBlank()) variables.text.split(" ") else emptyList()
-        config.settings.options = if (options.text.isNotBlank()) PosixCommandLine.split(options.text) else emptyList()
+        config.settings.tags = tags.text.split(" ")
+        config.settings.variables = variables.text.split(" ")
+        config.settings.options = PosixCommandLine.split(options.text)
         config.settings.workdir = workdir.text
         return
     }
@@ -245,13 +245,28 @@ class PlaybookRunSettings {
     }
 
     var playbooks = emptyList<String>()  // TODO: add set() for [""] -> []
+        set(value) {
+            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
+        }
     var inventory = emptyList<String>()
+        set(value) {
+            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
+        }
     var host = ""
     var tags = emptyList<String>()  // TODO: Set
+        set(value) {
+            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
+        }
     var variables = emptyList<String>()  // TODO: Set
+        set(value) {
+            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
+        }
     var command = ""
         get() = if (field.isNotBlank()) field else "ansible-playbook"
     var options = emptyList<String>()
+        set(value) {
+            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
+        }
     var workdir = ""
 
     /**
@@ -265,7 +280,6 @@ class PlaybookRunSettings {
         host = JDOMExternalizerUtil.readField(element, "host", "")
         tags = JDOMExternalizerUtil.readField(element, "tags", "").split(DELIMIT)
         variables = JDOMExternalizerUtil.readField(element, "variables", "").split(DELIMIT)
-        host = JDOMExternalizerUtil.readField(element, "host", "")
         command = JDOMExternalizerUtil.readField(element, "command", "")
         options = JDOMExternalizerUtil.readField(element, "options", "").split(DELIMIT)
         workdir = JDOMExternalizerUtil.readField(element, "workDir", "")
@@ -284,7 +298,6 @@ class PlaybookRunSettings {
         JDOMExternalizerUtil.writeField(element, "host", host, "")
         JDOMExternalizerUtil.writeField(element, "tags", tags.joinToString(DELIMIT), "")
         JDOMExternalizerUtil.writeField(element, "variables", variables.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "host", host, "")
         JDOMExternalizerUtil.writeField(element, "command", command, "")
         JDOMExternalizerUtil.writeField(element, "options", options.joinToString(DELIMIT), "")
         JDOMExternalizerUtil.writeField(element, "workDir", workdir, "")
