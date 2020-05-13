@@ -214,7 +214,6 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
         val settings = config.settings
         val command = PosixCommandLine(settings.command)
         val options = mutableMapOf<String, Any?>(
-            "verbose" to true,  // TODO: user option
             "limit" to nullBlank(settings.host),
             "inventory" to nullBlank(settings.inventory.joinToString(",")),
             "tags" to nullBlank(settings.tags.joinToString(",")),
