@@ -2,11 +2,9 @@ package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
-import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
-import com.intellij.execution.runners.DefaultProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
@@ -167,31 +165,6 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
     }
 }
 
-
-/**
- * TODO
- */
-class PlaybookRunner : DefaultProgramRunner() {  // FIXME: deprecation
-    /**
-     * Checks if the program runner is capable of running the specified configuration with the specified executor.
-     *
-     * @param executorId ID of the [Executor] with which the user is trying to run the configuration.
-     * @param profile the configuration being run.
-     * @return true if the runner can handle it, false otherwise.
-     */
-    override fun canRun(executorId: String, profile: RunProfile): Boolean {
-        return DefaultRunExecutor.EXECUTOR_ID == executorId && profile is PlaybookRunConfiguration
-    }
-
-    /**
-     * Returns the unique ID of this runner. This ID is used to store settings and must not change between plugin versions.
-     *
-     * @return the program runner ID.
-     */
-    override fun getRunnerId(): String {
-        return "AnsiblePlaybookRunner"
-    }
-}
 
 
 /**
