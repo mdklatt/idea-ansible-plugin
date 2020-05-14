@@ -1,0 +1,3 @@
+---
+- name: mdklatt.tmpdir
+  version: v0.3.0
