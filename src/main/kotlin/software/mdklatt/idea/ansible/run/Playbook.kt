@@ -1,6 +1,8 @@
 package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor
+import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.RunConfigurationProducer
 import com.intellij.execution.configurations.*
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
@@ -11,6 +13,8 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.JDOMExternalizerUtil
+import com.intellij.openapi.util.Ref
+import com.intellij.psi.PsiElement
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.layout.panel
 import org.jdom.Element
@@ -38,7 +42,7 @@ class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFacto
  * TODO
  */
 class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
-        RunConfigurationBase<RunProfileState>(project, factory, name) {
+        LocatableConfigurationBase<RunProfileState>(project, factory, name) {
 
     var settings = PlaybookRunSettings()
 
@@ -62,7 +66,7 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState? {
-        return PlaybookCommandLineState(this, environment)
+        return PlaybookCommandLineState(this.settings, environment)
     }
 
     /**
@@ -170,7 +174,9 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
 /**
  * TODO
  */
-class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
+class PlaybookCommandLineState(private val settings: PlaybookRunSettings, environment: ExecutionEnvironment) :
+        CommandLineState(environment) {
+
     /**
      * Starts the process.
      *
@@ -184,7 +190,6 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
         fun nullBlank(str: String): String? {
             return if (str.isNotBlank()) str else null
         }
-        val settings = config.settings
         val command = PosixCommandLine(settings.command)
         val options = mutableMapOf<String, Any?>(
             "limit" to nullBlank(settings.host),
@@ -193,7 +198,7 @@ class PlaybookCommandLineState(private val config: PlaybookRunConfiguration, env
             "extra-vars" to nullBlank(settings.variables.joinToString(" "))
         )
         command.addOptions(options)
-        command.addParameters(config.settings.options)
+        command.addParameters(settings.options)
         command.addParameters(settings.playbooks)
         if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
