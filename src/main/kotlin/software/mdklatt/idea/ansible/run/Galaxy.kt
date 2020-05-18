@@ -19,6 +19,9 @@ import org.jdom.Element
 import javax.swing.JComponent
 
 
+/**
+ * TODO
+ */
 class GalaxyConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(type) {
     /**
      * Creates a new template run configuration within the context of the specified project.
@@ -26,12 +29,24 @@ class GalaxyConfigurationFactory(type: ConfigurationType) : ConfigurationFactory
      * @param project the project in which the run configuration will be used
      * @return the run configuration instance.
      */
-    override fun createTemplateConfiguration(project: Project): RunConfiguration {
-        return GalaxyRunConfiguration(project, this, "Ansible Galaxy")
+    override fun createTemplateConfiguration(project: Project): GalaxyRunConfiguration {
+        return GalaxyRunConfiguration(project, this, this.name)
+    }
+
+    /**
+     * The name of the run configuration variant created by this factory.
+     *
+     * @returns: name
+     */
+    override fun getName(): String {
+        return "Ansible Galaxy"
     }
 }
 
 
+/**
+ * TODO
+ */
 class GalaxyRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
     RunConfigurationBase<RunProfileState>(project, factory, name) {
 
@@ -158,8 +173,8 @@ class GalaxySettingsEditor(project: Project) : SettingsEditor<GalaxyRunConfigura
             force()
         }
         row("Raw options:") { options() }
-        titledRow("Ansible Settings") {}
-        row("Galaxy command:") { command() }
+        titledRow("Environment") {}
+        row("Ansible command:") { command() }
         row("Working directory:") { workDir() }
     }
 

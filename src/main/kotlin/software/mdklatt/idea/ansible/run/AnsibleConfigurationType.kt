@@ -57,15 +57,7 @@ class AnsibleConfigurationType : ConfigurationType {
      */
     override fun getConfigurationFactories(): Array<ConfigurationFactory> {
         return arrayOf(
-            // Registering multiple ConfigurationFactories here is supposed to
-            // permit Configuration subtypes (cf. PyCharm Python test). This
-            // doesn't work correctly for some reason. There are multiple
-            // Configurations show in the menu, but they are all duplicates of
-            // the first factory in this list. Also, this ConfigurationType's
-            // display name is show for each option instead of the display
-            // name of the Configuration.
-            // https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#configuration-factory
-            // GalaxyConfigurationFactory(this),  // FIXME
+            GalaxyConfigurationFactory(this),
             PlaybookConfigurationFactory(this)
         )
     }

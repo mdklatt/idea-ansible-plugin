@@ -32,8 +32,17 @@ class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFacto
      * @param project the project in which the run configuration will be used
      * @return the run configuration instance.
      */
-    override fun createTemplateConfiguration(project: Project): RunConfiguration {
-        return PlaybookRunConfiguration(project, this, "Ansible Playbook")
+    override fun createTemplateConfiguration(project: Project): PlaybookRunConfiguration {
+        return PlaybookRunConfiguration(project, this, this.name)
+    }
+
+    /**
+     * The name of the run configuration variant created by this factory.
+     *
+     * @returns: name
+     */
+    override fun getName(): String {
+        return "Ansible Playbook"
     }
 }
 
@@ -128,8 +137,8 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         row("Tags:") { tags() }
         row("Extra variables:") { variables() }
         row("Raw options:") { options() }
-        titledRow("Ansible Settings") {}
-        row("Playbook command:") { command() }
+        titledRow("Environment") {}
+        row("Ansible command:") { command() }
         row("Working directory:") { workdir() }
     }
 
