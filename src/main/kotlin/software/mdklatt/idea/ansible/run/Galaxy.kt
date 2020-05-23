@@ -15,14 +15,17 @@ import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.components.CheckBox
 import com.intellij.ui.layout.panel
+import com.intellij.util.getOrCreate
 import org.jdom.Element
 import javax.swing.JComponent
 
 
 /**
- * TODO
+ * Factory for GalaxyRunConfiguration instances.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#configuration-factory">Configuration Factory</a>
  */
-class GalaxyConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(type) {
+class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) : ConfigurationFactory(type) {
     /**
      * Creates a new template run configuration within the context of the specified project.
      *
@@ -30,7 +33,7 @@ class GalaxyConfigurationFactory(type: ConfigurationType) : ConfigurationFactory
      * @return the run configuration instance.
      */
     override fun createTemplateConfiguration(project: Project): GalaxyRunConfiguration {
-        return GalaxyRunConfiguration(project, this, this.name)
+        return GalaxyRunConfiguration(project, this, "")
     }
 
     /**
@@ -41,13 +44,24 @@ class GalaxyConfigurationFactory(type: ConfigurationType) : ConfigurationFactory
     override fun getName(): String {
         return "Ansible Galaxy"
     }
+
+    /**
+     * Run configuration ID used for serialization.
+     *
+     * @return: unique ID
+     */
+    override fun getId(): String {
+        return this::class.java.simpleName
+    }
 }
 
 
 /**
- * TODO
+ * Run Configuration for executing <a href="https://docs.ansible.com/ansible/latest/cli/ansible-galaxy.html">ansible-galaxy</a>.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#run-configuration">Run Configuration</a>
  */
-class GalaxyRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
+class GalaxyRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
     RunConfigurationBase<RunProfileState>(project, factory, name) {
 
     var settings = GalaxyRunSettings()
@@ -84,7 +98,7 @@ class GalaxyRunConfiguration(project: Project, factory: ConfigurationFactory, na
      */
     override fun readExternal(element: Element) {
         super.readExternal(element)
-        settings.read(element)
+        settings = GalaxyRunSettings(element)
         return
     }
 
@@ -106,7 +120,7 @@ class GalaxyRunConfiguration(project: Project, factory: ConfigurationFactory, na
 /**
  * TODO
  */
-class GalaxyCommandLineState(private val config: GalaxyRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
+class GalaxyCommandLineState internal constructor(private val config: GalaxyRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
     /**
      * Starts the process.
      *
@@ -143,7 +157,12 @@ class GalaxyCommandLineState(private val config: GalaxyRunConfiguration, environ
 }
 
 
-class GalaxySettingsEditor(project: Project) : SettingsEditor<GalaxyRunConfiguration>() {
+/**
+ * UI component for Galaxy Run Configuration settings.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#settings-editor">Settings Editor</a>
+ */
+class GalaxySettingsEditor internal constructor(project: Project) : SettingsEditor<GalaxyRunConfiguration>() {
 
     var requirements = TextFieldWithBrowseButton()
     var deps = CheckBox("Install transitive dependencies")
@@ -201,6 +220,7 @@ class GalaxySettingsEditor(project: Project) : SettingsEditor<GalaxyRunConfigura
     override fun applyEditorTo(config: GalaxyRunConfiguration) {
         // This apparently gets called for every key press, so performance is
         // critical.
+        config.settings = GalaxyRunSettings()
         config.settings.requirements = requirements.text
         config.settings.deps = deps.isSelected
         config.settings.force = force.isSelected
@@ -215,10 +235,28 @@ class GalaxySettingsEditor(project: Project) : SettingsEditor<GalaxyRunConfigura
 /**
  * Manage GalaxyRunConfiguration runtime settings.
  */
-class GalaxyRunSettings {
+class GalaxyRunSettings internal constructor() {
 
     companion object {
         private const val DELIMIT = "|"
+        private const val JDOM_TAG = "ansible-galaxy"
+    }
+
+    /**
+     * Construct object from a JDOM element.
+     *
+     * @param element: input element
+     */
+    internal constructor(element: Element) : this() {
+        val child = element.getOrCreate(JDOM_TAG)
+        requirements = JDOMExternalizerUtil.readField(child, "requirements", "")
+        deps = JDOMExternalizerUtil.readField(child, "deps", "true").toBoolean()
+        force = JDOMExternalizerUtil.readField(child, "force", "false").toBoolean()
+        rolesDir = JDOMExternalizerUtil.readField(child, "rolesDir", "")
+        command = JDOMExternalizerUtil.readField(child, "command", "")
+        options = JDOMExternalizerUtil.readField(child, "options", "").split(DELIMIT)
+        workDir = JDOMExternalizerUtil.readField(child, "workDir", "")
+        return
     }
 
     var requirements = ""
@@ -234,35 +272,19 @@ class GalaxyRunSettings {
     var workDir = ""
 
     /**
-     * Reading settings from a JDOM element.
-     *
-     * @param element: input element.
-     */
-    fun read(element: Element) {
-        requirements = JDOMExternalizerUtil.readField(element, "requirements", "")
-        force = JDOMExternalizerUtil.readField(element, "force", "false").toBoolean()
-        deps = JDOMExternalizerUtil.readField(element, "deps", "deps").toBoolean()
-        rolesDir = JDOMExternalizerUtil.readField(element, "rolesDir", "")
-        command = JDOMExternalizerUtil.readField(element, "command", "")
-        options = JDOMExternalizerUtil.readField(element, "options", "").split(DELIMIT)
-        workDir = JDOMExternalizerUtil.readField(element, "workDir", "")
-        return
-    }
-
-    /**
      * Write settings to a JDOM element.
      *
      * @param element: output element
      */
     fun write(element: Element) {
-        // Value isn't written if it matches the given default.
-        JDOMExternalizerUtil.writeField(element, "requirements", requirements, "")
-        JDOMExternalizerUtil.writeField(element, "deps", deps.toString(), "")
-        JDOMExternalizerUtil.writeField(element, "force", force.toString(), "")
-        JDOMExternalizerUtil.writeField(element, "rolesDir", rolesDir, "")
-        JDOMExternalizerUtil.writeField(element, "command", command, "")
-        JDOMExternalizerUtil.writeField(element, "options", options.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "workDir", workDir, "")
+        val child = element.getOrCreate(JDOM_TAG)
+        JDOMExternalizerUtil.writeField(child, "requirements", requirements)
+        JDOMExternalizerUtil.writeField(child, "deps", deps.toString())
+        JDOMExternalizerUtil.writeField(child, "force", force.toString())
+        JDOMExternalizerUtil.writeField(child, "rolesDir", rolesDir)
+        JDOMExternalizerUtil.writeField(child, "command", command)
+        JDOMExternalizerUtil.writeField(child, "options", options.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "workDir", workDir)
         return
     }
 }

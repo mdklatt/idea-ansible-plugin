@@ -1,4 +1,4 @@
-package software.mdklatt.idea.ansible.test.run.software.mdklatt.idea.ansible.test.run
+package software.mdklatt.idea.ansible.test.run
 
 import org.jdom.Element
 import kotlin.test.assertEquals
@@ -11,21 +11,46 @@ import software.mdklatt.idea.ansible.run.GalaxyRunSettings
  */
 class GalaxyRunSettingsTest {
 
-    private var settings = GalaxyRunSettings()
-
-    init {
-        settings.options = listOf("one", " two  \"three\"")
+    private var settings = GalaxyRunSettings().apply {
+        requirements = "reqs.yml"
+        rolesDir = "roles/"
+        deps = false
+        force = true
+        command = "ansbile-command"
+        options = listOf("one", " two  \"three\"")
+        workDir = "abc/"
     }
 
     /**
-     * Test the constructor.
+     * Test the primary constructor.
      */
     @Test
     fun testCtor() {
-        val settings = GalaxyRunSettings()
-        assertEquals("", settings.requirements)
-        assertEquals(emptyList(), settings.options)
-        assertEquals("ansible-galaxy", settings.command)
+        GalaxyRunSettings().apply {
+            assertEquals("", requirements)
+            assertEquals(true, deps)
+            assertEquals(false, force)
+            assertEquals("ansible-galaxy", command)
+            assertEquals(emptyList(), options)
+            assertEquals("", workDir)
+        }
+    }
+
+    /**
+     * Test round-trip write/read with a JDOM Element.
+     */
+    @Test
+    fun testJdomElementC() {
+        val element = Element("configuration")
+        settings.write(element)
+        GalaxyRunSettings(element).apply {
+            assertEquals(requirements, settings.requirements)
+            assertEquals(rolesDir, settings.rolesDir)
+            assertEquals(deps, settings.deps)
+            assertEquals(force, settings.force)
+            assertEquals(command, settings.command)
+            assertEquals(options, settings.options)
+        }
     }
 
     /**
@@ -38,21 +63,5 @@ class GalaxyRunSettingsTest {
         assertEquals("ansible-galaxy", settings.command)
         settings.command = "abc"
         assertEquals("abc", settings.command)
-    }
-
-    /**
-     * Test the read() and write() methods.
-     */
-    @Test
-    fun testReadWrite() {
-        // Verify round-tripping via write() and read().
-        val elem = Element("elem")
-        settings.write(elem)
-        val savedSettings = GalaxyRunSettings()
-        savedSettings.read(elem)
-        assertEquals(settings.requirements, savedSettings.requirements)
-        assertEquals(settings.command, savedSettings.command)
-        assertEquals(settings.options, savedSettings.options)
-        assertEquals(settings.workDir, savedSettings.workDir)
     }
 }
