@@ -11,26 +11,46 @@ import software.mdklatt.idea.ansible.run.PlaybookRunSettings
  */
 class PlaybookRunSettingsTest {
 
-    private var settings = PlaybookRunSettings()
-
-    init {
-        settings.tags = listOf("abc", "xyz")
-        settings.options = listOf("one", " two  \"three\"")
+    private var settings = PlaybookRunSettings().apply {
+        playbooks = listOf("playbook.yml")
+        inventory = listOf("hosts.yml")
+        variables= listOf("key1=val1", "key2=vale")
+        tags = listOf("abc", "xyz")
+        options = listOf("one", " two  \"three\"")
     }
 
     /**
-     * Test the constructor.
+     * Test the primary constructor.
      */
     @Test
     fun testCtor() {
-        val settings = PlaybookRunSettings()
-        assertEquals(emptyList(), settings.playbooks)
-        assertEquals(emptyList(), settings.inventory)
-        assertEquals("", settings.host)
-        assertEquals(emptyList(), settings.tags)
-        assertEquals(emptyList(), settings.variables)
-        assertEquals(emptyList(), settings.options)
-        assertEquals("ansible-playbook", settings.command)
+        PlaybookRunSettings().apply {
+            assertEquals(emptyList(), playbooks)
+            assertEquals(emptyList(), inventory)
+            assertEquals("", host)
+            assertEquals(emptyList(), tags)
+            assertEquals(emptyList(), variables)
+            assertEquals(emptyList(), options)
+            assertEquals("ansible-playbook", command)
+        }
+    }
+
+    /**
+     * Test round-trip write/read with a JDOM Element.
+     */
+    @Test
+    fun testJdomElementC() {
+        val element = Element("configuration")
+        settings.write(element)
+        PlaybookRunSettings(element).apply {
+            assertEquals(playbooks, settings.playbooks)
+            assertEquals(inventory, settings.inventory)
+            assertEquals(host, settings.host)
+            assertEquals(tags, settings.tags)
+            assertEquals(variables, settings.variables)
+            assertEquals(options, settings.options)
+            assertEquals(command, settings.command)
+        }
     }
 
     /**
@@ -43,25 +63,5 @@ class PlaybookRunSettingsTest {
         assertEquals("ansible-playbook", settings.command)
         settings.command = "abc"
         assertEquals("abc", settings.command)
-    }
-
-    /**
-     * Test the read() and write() methods.
-     */
-    @Test
-    fun testReadWrite() {
-        // Verify round-tripping via write() and read().
-        val elem = Element("elem")
-        settings.write(elem)
-        val savedSettings = PlaybookRunSettings()
-        savedSettings.read(elem)
-        assertEquals(settings.playbooks, savedSettings.playbooks)
-        assertEquals(settings.inventory, savedSettings.inventory)
-        assertEquals(settings.host, savedSettings.host)
-        assertEquals(settings.tags, savedSettings.tags)
-        assertEquals(settings.variables, savedSettings.variables)
-        assertEquals(settings.command, savedSettings.command)
-        assertEquals(settings.options, savedSettings.options)
-        assertEquals(settings.workdir, savedSettings.workdir)
     }
 }

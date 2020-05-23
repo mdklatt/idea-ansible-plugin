@@ -1,8 +1,6 @@
 package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor
-import com.intellij.execution.actions.ConfigurationContext
-import com.intellij.execution.actions.RunConfigurationProducer
 import com.intellij.execution.configurations.*
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
@@ -13,19 +11,20 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.JDOMExternalizerUtil
-import com.intellij.openapi.util.Ref
-import com.intellij.psi.PsiElement
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.layout.panel
+import com.intellij.util.getOrCreate
 import org.jdom.Element
 import javax.swing.JComponent
 import javax.swing.JTextField
 
 
 /**
- * TODO
+ * Factory for PlaybookRunConfiguration instances.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#configuration-factory">Configuration Factory</a>
  */
-class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFactory(type) {
+class PlaybookConfigurationFactory internal constructor(type: ConfigurationType) : ConfigurationFactory(type) {
     /**
      * Creates a new template run configuration within the context of the specified project.
      *
@@ -33,25 +32,36 @@ class PlaybookConfigurationFactory(type: ConfigurationType) : ConfigurationFacto
      * @return the run configuration instance.
      */
     override fun createTemplateConfiguration(project: Project): PlaybookRunConfiguration {
-        return PlaybookRunConfiguration(project, this, this.name)
+        return PlaybookRunConfiguration(project, this, "Anible Playbook")
     }
 
     /**
      * The name of the run configuration variant created by this factory.
      *
-     * @returns: name
+     * @return: name
      */
     override fun getName(): String {
         return "Ansible Playbook"
+    }
+
+    /**
+     * Run configuration ID used for serialization.
+     *
+     * @return: unique ID
+     */
+    override fun getId(): String {
+        return this::class.java.simpleName
     }
 }
 
 
 /**
- * TODO
+ * Run Configuration for executing <a href="https://docs.ansible.com/ansible/latest/cli/ansible-playbook.html">ansible-playbook</a>.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#run-configuration">Run Configuration</a>
  */
-class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
-        LocatableConfigurationBase<RunProfileState>(project, factory, name) {
+class PlaybookRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
+        RunConfigurationBase<RunProfileState>(project, factory, name) {
 
     var settings = PlaybookRunSettings()
 
@@ -87,7 +97,7 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
      */
     override fun readExternal(element: Element) {
         super.readExternal(element)
-        settings.read(element)
+        settings = PlaybookRunSettings(element)
         return
     }
 
@@ -107,9 +117,11 @@ class PlaybookRunConfiguration(project: Project, factory: ConfigurationFactory, 
 
 
 /**
- * TODO
+ * UI component for Playbook Run Configuration settings.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#settings-editor">Settings Editor</a>
  */
-class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfiguration>() {
+class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEditor<PlaybookRunConfiguration>() {
 
     var playbooks = TextFieldWithBrowseButton()
     var inventory = TextFieldWithBrowseButton()
@@ -167,6 +179,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
         // This apparently gets called for every key press, so performance is
         // critical.
         // TODO: Get file list for playbooks and inventory.
+        config.settings = PlaybookRunSettings()
         config.settings.playbooks = listOf(playbooks.text)
         config.settings.inventory = listOf(inventory.text)
         config.settings.host = host.text
@@ -183,7 +196,7 @@ class PlaybookSettingsEditor(project: Project) : SettingsEditor<PlaybookRunConfi
 /**
  * TODO
  */
-class PlaybookCommandLineState(private val settings: PlaybookRunSettings, environment: ExecutionEnvironment) :
+class PlaybookCommandLineState internal constructor(private val settings: PlaybookRunSettings, environment: ExecutionEnvironment) :
         CommandLineState(environment) {
 
     /**
@@ -225,10 +238,29 @@ class PlaybookCommandLineState(private val settings: PlaybookRunSettings, enviro
 /**
  * Manage PlaybookRunConfiguration runtime settings.
  */
-class PlaybookRunSettings {
+class PlaybookRunSettings internal constructor() {
 
     companion object {
         private const val DELIMIT = "|"
+        private const val JDOM_TAG = "ansible-playbook"
+    }
+
+    /**
+     * Construct object from a JDOM element.
+     *
+     * @param element: input element
+     */
+    internal constructor(element: Element) : this() {
+        val child = element.getOrCreate(JDOM_TAG)
+        playbooks = JDOMExternalizerUtil.readField(child, "playbooks", "").split(DELIMIT)
+        inventory = JDOMExternalizerUtil.readField(child, "inventory", "").split(DELIMIT)
+        host = JDOMExternalizerUtil.readField(child, "host", "")
+        tags = JDOMExternalizerUtil.readField(child, "tags", "").split(DELIMIT)
+        variables = JDOMExternalizerUtil.readField(child, "variables", "").split(DELIMIT)
+        command = JDOMExternalizerUtil.readField(child, "command", "")
+        options = JDOMExternalizerUtil.readField(child, "options", "").split(DELIMIT)
+        workdir = JDOMExternalizerUtil.readField(child, "workDir", "")
+        return
     }
 
     var playbooks = emptyList<String>()  // TODO: add set() for [""] -> []
@@ -257,37 +289,20 @@ class PlaybookRunSettings {
     var workdir = ""
 
     /**
-     * Reading settings from a JDOM element.
-     *
-     * @param element: input element.
-     */
-    fun read(element: Element) {
-        playbooks = JDOMExternalizerUtil.readField(element, "playbooks", "").split(DELIMIT)
-        inventory = JDOMExternalizerUtil.readField(element, "inventory", "").split(DELIMIT)
-        host = JDOMExternalizerUtil.readField(element, "host", "")
-        tags = JDOMExternalizerUtil.readField(element, "tags", "").split(DELIMIT)
-        variables = JDOMExternalizerUtil.readField(element, "variables", "").split(DELIMIT)
-        command = JDOMExternalizerUtil.readField(element, "command", "")
-        options = JDOMExternalizerUtil.readField(element, "options", "").split(DELIMIT)
-        workdir = JDOMExternalizerUtil.readField(element, "workDir", "")
-        return
-    }
-
-    /**
      * Write settings to a JDOM element.
      *
      * @param element: output element
      */
     fun write(element: Element) {
-        // Value isn't written if it matches the given default.
-        JDOMExternalizerUtil.writeField(element, "playbooks", playbooks.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "inventory", inventory.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "host", host, "")
-        JDOMExternalizerUtil.writeField(element, "tags", tags.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "variables", variables.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "command", command, "")
-        JDOMExternalizerUtil.writeField(element, "options", options.joinToString(DELIMIT), "")
-        JDOMExternalizerUtil.writeField(element, "workDir", workdir, "")
+        val child = element.getOrCreate(JDOM_TAG)
+        JDOMExternalizerUtil.writeField(child, "playbooks", playbooks.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "inventory", inventory.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "host", host)
+        JDOMExternalizerUtil.writeField(child, "tags", tags.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "variables", variables.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "command", command)
+        JDOMExternalizerUtil.writeField(child, "options", options.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "workDir", workdir)
         return
     }
 }
