@@ -1,9 +1,40 @@
+/**
+ * Unit tests for the Galaxy module.
+ */
 package software.mdklatt.idea.ansible.test.run
 
-import org.jdom.Element
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import org.jdom.Element
 import org.junit.jupiter.api.Test
+import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
+import software.mdklatt.idea.ansible.run.GalaxyConfigurationFactory
 import software.mdklatt.idea.ansible.run.GalaxyRunSettings
+
+
+/**
+ * Unit tests for the GalaxyConfigurationFactory class.
+ */
+class GalaxyConfigurationFactoryTest {
+
+    private val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
+
+    /**
+     * Test the id property.
+     */
+    @Test
+    fun testId() {
+        assertTrue(factory.id.isNotBlank())
+    }
+
+    /**
+     * Test the name property.
+     */
+    @Test
+    fun testName() {
+        assertTrue(factory.name.isNotBlank())
+    }
+}
 
 
 /**
