@@ -14,9 +14,9 @@ class PlaybookRunSettingsTest {
     private var settings = PlaybookRunSettings().apply {
         playbooks = listOf("playbook.yml")
         inventory = listOf("hosts.yml")
-        variables= listOf("key1=val1", "key2=vale")
+        variables= listOf("key1=val1", "key2=val2")
         tags = listOf("abc", "xyz")
-        options = listOf("one", " two  \"three\"")
+        rawOpts = "one \"two\""
     }
 
     /**
@@ -30,7 +30,7 @@ class PlaybookRunSettingsTest {
             assertEquals("", host)
             assertEquals(emptyList(), tags)
             assertEquals(emptyList(), variables)
-            assertEquals(emptyList(), options)
+            assertEquals("", rawOpts)
             assertEquals("ansible-playbook", command)
         }
     }
@@ -48,7 +48,7 @@ class PlaybookRunSettingsTest {
             assertEquals(host, settings.host)
             assertEquals(tags, settings.tags)
             assertEquals(variables, settings.variables)
-            assertEquals(options, settings.options)
+            assertEquals(rawOpts, settings.rawOpts)
             assertEquals(command, settings.command)
         }
     }
@@ -58,10 +58,11 @@ class PlaybookRunSettingsTest {
      */
     @Test
     fun testCommand() {
-        val settings = PlaybookRunSettings()
-        settings.command = ""
-        assertEquals("ansible-playbook", settings.command)
-        settings.command = "abc"
-        assertEquals("abc", settings.command)
+        PlaybookRunSettings().apply {
+            command = ""
+            assertEquals("ansible-playbook", command)
+            command = "abc"
+            assertEquals("abc", command)
+        }
     }
 }

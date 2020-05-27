@@ -31,27 +31,22 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
      * @param project the project in which the run configuration will be used
      * @return the run configuration instance.
      */
-    override fun createTemplateConfiguration(project: Project): PlaybookRunConfiguration {
-        return PlaybookRunConfiguration(project, this, "Anible Playbook")
-    }
+    override fun createTemplateConfiguration(project: Project) =
+            PlaybookRunConfiguration(project, this, "Anible Playbook")
 
     /**
      * The name of the run configuration variant created by this factory.
      *
      * @return: name
      */
-    override fun getName(): String {
-        return "Ansible Playbook"
-    }
+    override fun getName() = "Ansible Playbook"
 
     /**
      * Run configuration ID used for serialization.
      *
      * @return: unique ID
      */
-    override fun getId(): String {
-        return this::class.java.simpleName
-    }
+    override fun getId() = this::class.java.simpleName
 }
 
 
@@ -73,9 +68,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      *
      * @return the settings editor component.
      */
-    override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
-        return PlaybookSettingsEditor(project)
-    }
+    override fun getConfigurationEditor() = PlaybookSettingsEditor(project)
 
     /**
      * Prepares for executing a specific instance of the run configuration.
@@ -84,9 +77,8 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      * @param environment the environment object containing additional settings for executing the configuration.
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState? {
-        return PlaybookCommandLineState(this.settings, environment)
-    }
+    override fun getState(executor: Executor, environment: ExecutionEnvironment) =
+            PlaybookCommandLineState(this.settings, environment)
 
     /**
      * Read settings from a JDOM element.
@@ -123,35 +115,46 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
  */
 class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEditor<PlaybookRunConfiguration>() {
 
-    var playbooks = TextFieldWithBrowseButton()
-    var inventory = TextFieldWithBrowseButton()
+    companion object {
+        private val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
+        private val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
+    }
+
+    var playbooks = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Playbooks", "", project, fileChooser)
+    }
+    var inventory = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Inventory", "", project, fileChooser)
+    }
     var host = JTextField("")
     var tags = JTextField("")
     var variables = JTextField("")
-    var options = RawCommandLineEditor()
-    var command = TextFieldWithBrowseButton()
-    var workdir = TextFieldWithBrowseButton()
-
-    init {
-        val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
-        playbooks.addBrowseFolderListener("Playbooks", "", project, fileChooser)
-        inventory.addBrowseFolderListener("Inventory", "", project, fileChooser)
-        command.addBrowseFolderListener("Playbook Command", "", project, fileChooser)
-        val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
-        workdir.addBrowseFolderListener("Working Directory", "", project, dirChooser)
+    var command = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Ansible Command", "", project, fileChooser)
+    }
+    var rawOpts = RawCommandLineEditor()
+    var workDir = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Working Directory", "", project, dirChooser)
     }
 
-    private var settingsPanel = panel{
+    /**
+     * Create the widget for this editor.
+     *
+     * @return: UI widget
+     */
+    override fun createEditor(): JComponent {
         // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
-        row("Playbooks:") { playbooks() }
-        row("Inventory:") { inventory() }
-        row("Host:") { host() }
-        row("Tags:") { tags() }
-        row("Extra variables:") { variables() }
-        row("Raw options:") { options() }
-        titledRow("Environment") {}
-        row("Ansible command:") { command() }
-        row("Working directory:") { workdir() }
+        return panel{
+            row("Playbooks:") { playbooks() }
+            row("Inventory:") { inventory() }
+            row("Host:") { host() }
+            row("Tags:") { tags() }
+            row("Extra variables:") { variables() }
+            titledRow("Environment") {}
+            row("Ansible command:") { command() }
+            row("Raw options:") { rawOpts() }
+            row("Working directory:") { workDir() }
+        }
     }
 
     /**
@@ -160,21 +163,24 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
      * @param config: run configuration
      */
     override fun resetEditorFrom(config: PlaybookRunConfiguration) {
-        playbooks.text = if (config.settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
-        inventory.text = if (config.settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
-        host.text = config.settings.host
-        tags.text = config.settings.tags.joinToString(" ")
-        variables.text = config.settings.variables.joinToString(" ")
-        command.text = config.settings.command
-        options.text = PosixCommandLine.join(config.settings.options)
-        workdir.text = config.settings.workdir
+        config.apply {
+            playbooks.text = if (settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
+            inventory.text = if (settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
+            host.text = settings.host
+            tags.text = settings.tags.joinToString(" ")
+            variables.text = settings.variables.joinToString(" ")
+            command.text = settings.command
+            rawOpts.text = settings.rawOpts
+            workDir.text = settings.workDir
+        }
         return
     }
 
-    override fun createEditor(): JComponent {
-        return settingsPanel
-    }
-
+    /**
+     * Apply editor fields to the configuration state.
+     *
+     * @param config: run configuration
+     */
     override fun applyEditorTo(config: PlaybookRunConfiguration) {
         // This apparently gets called for every key press, so performance is
         // critical.
@@ -185,8 +191,8 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
         config.settings.host = host.text
         config.settings.tags = tags.text.split(" ")
         config.settings.variables = variables.text.split(" ")
-        config.settings.options = PosixCommandLine.split(options.text)
-        config.settings.workdir = workdir.text
+        config.settings.rawOpts = rawOpts.text
+        config.settings.workDir = workDir.text
         return
     }
 }
@@ -220,13 +226,13 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
             "extra-vars" to nullBlank(settings.variables.joinToString(" "))
         )
         command.addOptions(options)
-        command.addParameters(settings.options)
+        command.addParameters(PosixCommandLine.split(settings.rawOpts))
         command.addParameters(settings.playbooks)
         if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
         }
-        if (settings.workdir.isNotBlank()) {
-            command.withWorkDirectory(settings.workdir)
+        if (settings.workDir.isNotBlank()) {
+            command.withWorkDirectory(settings.workDir)
         }
         val process = KillableColoredProcessHandler(command)
         ProcessTerminatedListener.attach(process, environment.project)
@@ -243,24 +249,6 @@ class PlaybookRunSettings internal constructor() {
     companion object {
         private const val DELIMIT = "|"
         private const val JDOM_TAG = "ansible-playbook"
-    }
-
-    /**
-     * Construct object from a JDOM element.
-     *
-     * @param element: input element
-     */
-    internal constructor(element: Element) : this() {
-        val child = element.getOrCreate(JDOM_TAG)
-        playbooks = JDOMExternalizerUtil.readField(child, "playbooks", "").split(DELIMIT)
-        inventory = JDOMExternalizerUtil.readField(child, "inventory", "").split(DELIMIT)
-        host = JDOMExternalizerUtil.readField(child, "host", "")
-        tags = JDOMExternalizerUtil.readField(child, "tags", "").split(DELIMIT)
-        variables = JDOMExternalizerUtil.readField(child, "variables", "").split(DELIMIT)
-        command = JDOMExternalizerUtil.readField(child, "command", "")
-        options = JDOMExternalizerUtil.readField(child, "options", "").split(DELIMIT)
-        workdir = JDOMExternalizerUtil.readField(child, "workDir", "")
-        return
     }
 
     var playbooks = emptyList<String>()  // TODO: add set() for [""] -> []
@@ -282,11 +270,27 @@ class PlaybookRunSettings internal constructor() {
         }
     var command = ""
         get() = if (field.isNotBlank()) field else "ansible-playbook"
-    var options = emptyList<String>()
-        set(value) {
-            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
+    var rawOpts = ""
+    var workDir = ""
+
+    /**
+     * Construct object from a JDOM element.
+     *
+     * @param element: input element
+     */
+    internal constructor(element: Element) : this() {
+        element.getOrCreate(JDOM_TAG).let {
+            playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(DELIMIT)
+            inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(DELIMIT)
+            host = JDOMExternalizerUtil.readField(it, "host", "")
+            tags = JDOMExternalizerUtil.readField(it, "tags", "").split(DELIMIT)
+            variables = JDOMExternalizerUtil.readField(it, "variables", "").split(DELIMIT)
+            command = JDOMExternalizerUtil.readField(it, "command", "")
+            rawOpts = JDOMExternalizerUtil.readField(it, "rawOpts", "")
+            workDir = JDOMExternalizerUtil.readField(it, "workDir", "")
         }
-    var workdir = ""
+        return
+    }
 
     /**
      * Write settings to a JDOM element.
@@ -294,15 +298,16 @@ class PlaybookRunSettings internal constructor() {
      * @param element: output element
      */
     fun write(element: Element) {
-        val child = element.getOrCreate(JDOM_TAG)
-        JDOMExternalizerUtil.writeField(child, "playbooks", playbooks.joinToString(DELIMIT))
-        JDOMExternalizerUtil.writeField(child, "inventory", inventory.joinToString(DELIMIT))
-        JDOMExternalizerUtil.writeField(child, "host", host)
-        JDOMExternalizerUtil.writeField(child, "tags", tags.joinToString(DELIMIT))
-        JDOMExternalizerUtil.writeField(child, "variables", variables.joinToString(DELIMIT))
-        JDOMExternalizerUtil.writeField(child, "command", command)
-        JDOMExternalizerUtil.writeField(child, "options", options.joinToString(DELIMIT))
-        JDOMExternalizerUtil.writeField(child, "workDir", workdir)
+         element.getOrCreate(JDOM_TAG).let {
+            JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(DELIMIT))
+            JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(DELIMIT))
+            JDOMExternalizerUtil.writeField(it, "host", host)
+            JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(DELIMIT))
+            JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(DELIMIT))
+            JDOMExternalizerUtil.writeField(it, "command", command)
+            JDOMExternalizerUtil.writeField(it, "rawOpts", rawOpts)
+            JDOMExternalizerUtil.writeField(it, "workDir", workDir)
+        }
         return
     }
 }
