@@ -1,9 +1,40 @@
+/**
+ * Unit tests for the Playbook module.
+ */
 package software.mdklatt.idea.ansible.test.run
 
 import org.jdom.Element
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
+import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
+import software.mdklatt.idea.ansible.run.PlaybookConfigurationFactory
 import software.mdklatt.idea.ansible.run.PlaybookRunSettings
+import kotlin.test.assertTrue
+
+
+/**
+ * Unit tests for the PlaybookConfigurationFactory class.
+ */
+class PlaybookConfigurationFactoryTest {
+
+    private val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
+
+    /**
+     * Test the id property.
+     */
+    @Test
+    fun testId() {
+        assertTrue(factory.id.isNotBlank())
+    }
+
+    /**
+     * Test the name property.
+     */
+    @Test
+    fun testName() {
+        assertTrue(factory.name.isNotBlank())
+    }
+}
 
 
 /**
