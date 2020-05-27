@@ -1,9 +1,7 @@
 package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import org.apache.commons.text.StringTokenizer
-import org.apache.commons.text.matcher.StringMatcherFactory
-import java.lang.StringBuilder
+import com.intellij.util.execution.ParametersListUtil
 
 
 /**
@@ -20,50 +18,32 @@ class PosixCommandLine(
 ) : GeneralCommandLine() {
 
     companion object {
-        private val quoteMatch = StringMatcherFactory.INSTANCE.quoteMatcher()
-        private val splitMatch = StringMatcherFactory.INSTANCE.splitMatcher()
-
         /**
-         * Join command line arguments using shell syntax
+         * Join command line arguments using shell syntax.
          *
          * Arguments containing whitespace are quoted, and quote literals are
-         * escaped.
+         * escaped with a backslash. This matches the behavior of the
+         * {@link import com.intellij.ui.RawCommandLineEditor} class.
+         *
          */
-        fun join(argv: List<String>): String {
-            val quote = '"'
-            val _argv = argv.toMutableList()
-            val it = _argv.listIterator()
-            while (it.hasNext()) {
-                val str = StringBuilder()
-                for (char in it.next()) {
-                    str.append(char)
-                    if (char == quote) {
-                        // Use repeated character to escape quote literal.
-                        str.append(char)
-                    }
-                }
-                var arg = str.toString()
-                if (splitMatch.isMatch(arg.toCharArray(), 0, 0, arg.lastIndex) > 0) {
-                    arg = quote + arg + quote
-                }
-                it.set(arg)
-            }
-            return _argv.joinToString(" ")
-        }
+        fun join(argv: List<String>) = ParametersListUtil.join(argv)
 
         /**
          * Split command line arguments using shell syntax.
          *
          * Arguments are split on whitespace. Quoted whitespace is preserved.
-         * A repeated quote character is interpreted as a quote literal.
+         * A literal quote character must be escaped with a backslash. This
+         * matches the behavior of the
+         * {@link import com.intellij.ui.RawCommandLineEditor} class.
+         *
+         * Note that this does *not* work for `--flag=value` style options;
+         * these should be specified as `--flag value` instead, where `value`
+         * is quoted if it contains spaces.
          *
          * @param args: argument expression to split
          * @return: sequence of arguments
          */
-        fun split(args: String): List<String> {
-            val splitter = StringTokenizer(args, splitMatch, quoteMatch)
-            return splitter.tokenList
-        }
+        fun split(args: String) = ParametersListUtil.parse(args)
     }
 
     init {

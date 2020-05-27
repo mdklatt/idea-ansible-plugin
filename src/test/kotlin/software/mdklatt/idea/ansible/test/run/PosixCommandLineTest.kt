@@ -29,7 +29,7 @@ class PosixCommandLineTest {
     fun testJoin() {
         assertEquals("", PosixCommandLine.join(emptyList()))
         val argv = listOf("one", " two  \"three\"")
-        val args = "one \" two  \"\"three\"\"\""
+        val args = "one \" two  \\\"three\\\"\""
         assertEquals(args, PosixCommandLine.join(argv))
     }
 
@@ -39,7 +39,7 @@ class PosixCommandLineTest {
     @Test
     fun testSplit() {
         assertEquals(emptyList(), PosixCommandLine.split(""))
-        val args = "one\t\n\r \" two  \"\"three\"\"\""
+        val args = "one\t\n\r \" two  \\\"three\\\"\""
         val argv = listOf("one", " two  \"three\"")
         assertEquals(argv, PosixCommandLine.split(args))
     }
