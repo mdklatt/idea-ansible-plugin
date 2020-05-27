@@ -1,6 +1,5 @@
 package software.mdklatt.idea.ansible.run
 
-
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.process.KillableColoredProcessHandler
@@ -32,27 +31,22 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
      * @param project the project in which the run configuration will be used
      * @return the run configuration instance.
      */
-    override fun createTemplateConfiguration(project: Project): GalaxyRunConfiguration {
-        return GalaxyRunConfiguration(project, this, "")
-    }
+    override fun createTemplateConfiguration(project: Project) =
+            GalaxyRunConfiguration(project, this, "")
 
     /**
      * The name of the run configuration variant created by this factory.
      *
      * @returns: name
      */
-    override fun getName(): String {
-        return "Ansible Galaxy"
-    }
+    override fun getName() = "Ansible Galaxy"
 
     /**
      * Run configuration ID used for serialization.
      *
      * @return: unique ID
      */
-    override fun getId(): String {
-        return this::class.java.simpleName
-    }
+    override fun getId() = this::class.java.simpleName
 }
 
 
@@ -62,7 +56,7 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
  * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#run-configuration">Run Configuration</a>
  */
 class GalaxyRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
-    RunConfigurationBase<RunProfileState>(project, factory, name) {
+        RunConfigurationBase<RunProfileState>(project, factory, name) {
 
     var settings = GalaxyRunSettings()
 
@@ -74,9 +68,7 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
      *
      * @return the settings editor component.
      */
-    override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration> {
-        return GalaxySettingsEditor(project)
-    }
+    override fun getConfigurationEditor() = GalaxySettingsEditor(project)
 
     /**
      * Prepares for executing a specific instance of the run configuration.
@@ -85,9 +77,8 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
      * @param environment the environment object containing additional settings for executing the configuration.
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState? {
-        return GalaxyCommandLineState(this, environment)
-    }
+    override fun getState(executor: Executor, environment: ExecutionEnvironment) =
+            GalaxyCommandLineState(this, environment)
 
     /**
      * Read settings from a JDOM element.
@@ -120,7 +111,8 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
 /**
  * TODO
  */
-class GalaxyCommandLineState internal constructor(private val config: GalaxyRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
+class GalaxyCommandLineState internal constructor(private val config: GalaxyRunConfiguration, environment: ExecutionEnvironment) :
+        CommandLineState(environment) {
     /**
      * Starts the process.
      *
@@ -143,16 +135,16 @@ class GalaxyCommandLineState internal constructor(private val config: GalaxyRunC
             "roles-path" to nullBlank(settings.rolesDir)
         )
         command.addOptions(options)
-        command.addParameters(config.settings.options)
+        command.addParameters(PosixCommandLine.split(settings.rawOpts))
         if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
         }
         if (settings.workDir.isNotBlank()) {
             command.withWorkDirectory(settings.workDir)
         }
-        val process = KillableColoredProcessHandler(command)
-        ProcessTerminatedListener.attach(process, environment.project)
-        return process
+        return KillableColoredProcessHandler(command).also {
+            ProcessTerminatedListener.attach(it, environment.project)
+        }
     }
 }
 
@@ -164,69 +156,85 @@ class GalaxyCommandLineState internal constructor(private val config: GalaxyRunC
  */
 class GalaxySettingsEditor internal constructor(project: Project) : SettingsEditor<GalaxyRunConfiguration>() {
 
-    var requirements = TextFieldWithBrowseButton()
-    var deps = CheckBox("Install transitive dependencies")
-    var force = CheckBox("Overwrite existing roles")
-    var rolesDir = TextFieldWithBrowseButton()
-    var options = RawCommandLineEditor()
-    var command = TextFieldWithBrowseButton()
-    var workDir = TextFieldWithBrowseButton()
-
-    init {
-        val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
-        requirements.addBrowseFolderListener("Requirements", "", project, fileChooser)
-        command.addBrowseFolderListener("Galaxy Command", "", project, fileChooser)
-        val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
-        rolesDir.addBrowseFolderListener("Roles Directory", "", project, dirChooser)
-        workDir.addBrowseFolderListener("Working Directory", "", project, dirChooser)
+    companion object {
+        private val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
+        private val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
     }
 
-    private var settingsPanel = panel{
-        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
-        row("Requirements:") {
-            requirements()
-            deps()
-        }
-        row("Roles directory:") {
-            rolesDir()
-            force()
-        }
-        row("Raw options:") { options() }
-        titledRow("Environment") {}
-        row("Ansible command:") { command() }
-        row("Working directory:") { workDir() }
+    var requirements = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Requirements", "", project, fileChooser)
+    }
+    var deps = CheckBox("Install transitive dependencies")
+    var force = CheckBox("Overwrite existing roles")
+    var rolesDir = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Roles Directory", "", project, dirChooser)
+    }
+    var command = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Ansible Command", "", project, fileChooser)
+    }
+    var rawOpts = RawCommandLineEditor()
+    var workDir = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener("Working Directory", "", project, dirChooser)
     }
 
     /**
-     * Reset editor fields from the saved configuration state.
+     * Create the widget for this editor.
+     *
+     * @return UI widget
+     */
+    override fun createEditor(): JComponent {
+        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
+        return panel {
+            row("Requirements:") {
+                requirements()
+                deps()
+            }
+            row("Roles directory:") {
+                rolesDir()
+                force()
+            }
+            titledRow("Environment") {}
+            row("Ansible command:") { command() }
+            row("Raw options:") { rawOpts() }
+            row("Working directory:") { workDir() }
+        }
+    }
+
+    /**
+     * Reset editor fields from the configuration state.
      *
      * @param config: run configuration
      */
     override fun resetEditorFrom(config: GalaxyRunConfiguration) {
-        requirements.text = config.settings.requirements
-        deps.isSelected = config.settings.deps
-        force.isSelected = config.settings.force
-        rolesDir.text = config.settings.rolesDir
-        command.text = config.settings.command
-        options.text = PosixCommandLine.join(config.settings.options)
-        workDir.text = config.settings.workDir
+        config.apply {
+            requirements.text = settings.requirements
+            deps.isSelected = settings.deps
+            force.isSelected = settings.force
+            rolesDir.text = settings.rolesDir
+            rawOpts.text = settings.rawOpts
+            workDir.text = settings.workDir
+
+        }
         return
     }
 
-    override fun createEditor(): JComponent {
-        return settingsPanel
-    }
-
+    /**
+     * Apply editor fields to the configuration state.
+     *
+     * @param config: run configuration
+     */
     override fun applyEditorTo(config: GalaxyRunConfiguration) {
         // This apparently gets called for every key press, so performance is
         // critical.
-        config.settings = GalaxyRunSettings()
-        config.settings.requirements = requirements.text
-        config.settings.deps = deps.isSelected
-        config.settings.force = force.isSelected
-        config.settings.rolesDir = rolesDir.text
-        config.settings.options = PosixCommandLine.split(options.text)
-        config.settings.workDir = workDir.text
+        config.apply {
+            settings = GalaxyRunSettings()
+            settings.requirements = requirements.text
+            settings.deps = deps.isSelected
+            settings.force = force.isSelected
+            settings.rolesDir = rolesDir.text
+            settings.rawOpts = rawOpts.text
+            settings.workDir = workDir.text
+        }
         return
     }
 }
@@ -238,25 +246,7 @@ class GalaxySettingsEditor internal constructor(project: Project) : SettingsEdit
 class GalaxyRunSettings internal constructor() {
 
     companion object {
-        private const val DELIMIT = "|"
         private const val JDOM_TAG = "ansible-galaxy"
-    }
-
-    /**
-     * Construct object from a JDOM element.
-     *
-     * @param element: input element
-     */
-    internal constructor(element: Element) : this() {
-        val child = element.getOrCreate(JDOM_TAG)
-        requirements = JDOMExternalizerUtil.readField(child, "requirements", "")
-        deps = JDOMExternalizerUtil.readField(child, "deps", "true").toBoolean()
-        force = JDOMExternalizerUtil.readField(child, "force", "false").toBoolean()
-        rolesDir = JDOMExternalizerUtil.readField(child, "rolesDir", "")
-        command = JDOMExternalizerUtil.readField(child, "command", "")
-        options = JDOMExternalizerUtil.readField(child, "options", "").split(DELIMIT)
-        workDir = JDOMExternalizerUtil.readField(child, "workDir", "")
-        return
     }
 
     var requirements = ""
@@ -265,11 +255,26 @@ class GalaxyRunSettings internal constructor() {
     var rolesDir = ""
     var command = ""
         get() = if (field.isNotBlank()) field else "ansible-galaxy"
-    var options = emptyList<String>()
-        set(value) {
-            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
-        }
+    var rawOpts = ""
     var workDir = ""
+
+    /**
+     * Construct object from a JDOM element.
+     *
+     * @param element: input element
+     */
+    internal constructor(element: Element) : this() {
+        element.getOrCreate(JDOM_TAG).let {
+            requirements = JDOMExternalizerUtil.readField(it, "requirements", "")
+            deps = JDOMExternalizerUtil.readField(it, "deps", "true").toBoolean()
+            force = JDOMExternalizerUtil.readField(it, "force", "false").toBoolean()
+            rolesDir = JDOMExternalizerUtil.readField(it, "rolesDir", "")
+            command = JDOMExternalizerUtil.readField(it, "command", "")
+            rawOpts = JDOMExternalizerUtil.readField(it, "rawOpts", "")
+            workDir = JDOMExternalizerUtil.readField(it, "workDir", "")
+        }
+        return
+    }
 
     /**
      * Write settings to a JDOM element.
@@ -283,7 +288,7 @@ class GalaxyRunSettings internal constructor() {
         JDOMExternalizerUtil.writeField(child, "force", force.toString())
         JDOMExternalizerUtil.writeField(child, "rolesDir", rolesDir)
         JDOMExternalizerUtil.writeField(child, "command", command)
-        JDOMExternalizerUtil.writeField(child, "options", options.joinToString(DELIMIT))
+        JDOMExternalizerUtil.writeField(child, "rawOpts", rawOpts)
         JDOMExternalizerUtil.writeField(child, "workDir", workDir)
         return
     }

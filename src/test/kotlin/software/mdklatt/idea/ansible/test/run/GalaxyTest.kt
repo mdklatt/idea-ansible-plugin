@@ -17,7 +17,7 @@ class GalaxyRunSettingsTest {
         deps = false
         force = true
         command = "ansbile-command"
-        options = listOf("one", " two  \"three\"")
+        rawOpts = "one \"two\""
         workDir = "abc/"
     }
 
@@ -31,7 +31,7 @@ class GalaxyRunSettingsTest {
             assertEquals(true, deps)
             assertEquals(false, force)
             assertEquals("ansible-galaxy", command)
-            assertEquals(emptyList(), options)
+            assertEquals("", rawOpts)
             assertEquals("", workDir)
         }
     }
@@ -49,7 +49,7 @@ class GalaxyRunSettingsTest {
             assertEquals(deps, settings.deps)
             assertEquals(force, settings.force)
             assertEquals(command, settings.command)
-            assertEquals(options, settings.options)
+            assertEquals(rawOpts, settings.rawOpts)
         }
     }
 
@@ -58,10 +58,11 @@ class GalaxyRunSettingsTest {
      */
     @Test
     fun testCommand() {
-        val settings = GalaxyRunSettings()
-        settings.command = ""
-        assertEquals("ansible-galaxy", settings.command)
-        settings.command = "abc"
-        assertEquals("abc", settings.command)
+        GalaxyRunSettings().apply {
+            command = ""
+            assertEquals("ansible-galaxy", command)
+            command = "abc"
+            assertEquals("abc", command)
+        }
     }
 }
