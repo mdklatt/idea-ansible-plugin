@@ -115,26 +115,25 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
  */
 class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEditor<PlaybookRunConfiguration>() {
 
-    companion object {
-        private val fileChooser = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor()
-        private val dirChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor()
-    }
-
     var playbooks = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Playbooks", "", project, fileChooser)
+        addBrowseFolderListener("Playbooks", "", project,
+                FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor())
     }
     var inventory = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Inventory", "", project, fileChooser)
+        addBrowseFolderListener("Inventory", "", project,
+                FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor())
     }
     var host = JTextField("")
     var tags = JTextField("")
     var variables = JTextField("")
     var command = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Ansible Command", "", project, fileChooser)
+        addBrowseFolderListener("Ansible Command", "", project,
+                FileChooserDescriptorFactory.createSingleFileDescriptor())
     }
     var rawOpts = RawCommandLineEditor()
     var workDir = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Working Directory", "", project, dirChooser)
+        addBrowseFolderListener("Working Directory", "", project,
+                FileChooserDescriptorFactory.createSingleFolderDescriptor())
     }
 
     /**

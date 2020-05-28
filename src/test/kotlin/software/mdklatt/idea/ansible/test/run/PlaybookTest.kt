@@ -70,7 +70,7 @@ class PlaybookRunSettingsTest {
      * Test round-trip write/read with a JDOM Element.
      */
     @Test
-    fun testJdomElementC() {
+    fun testJdomElement() {
         val element = Element("configuration")
         settings.write(element)
         PlaybookRunSettings(element).apply {
