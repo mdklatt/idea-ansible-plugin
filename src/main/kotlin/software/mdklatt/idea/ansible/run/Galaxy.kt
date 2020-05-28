@@ -282,14 +282,16 @@ class GalaxyRunSettings internal constructor() {
      * @param element: output element
      */
     fun write(element: Element) {
-        val child = element.getOrCreate(JDOM_TAG)
-        JDOMExternalizerUtil.writeField(child, "requirements", requirements)
-        JDOMExternalizerUtil.writeField(child, "deps", deps.toString())
-        JDOMExternalizerUtil.writeField(child, "force", force.toString())
-        JDOMExternalizerUtil.writeField(child, "rolesDir", rolesDir)
-        JDOMExternalizerUtil.writeField(child, "command", command)
-        JDOMExternalizerUtil.writeField(child, "rawOpts", rawOpts)
-        JDOMExternalizerUtil.writeField(child, "workDir", workDir)
+        element.getOrCreate(JDOM_TAG).let {
+            JDOMExternalizerUtil.writeField(it, "requirements", requirements)
+            JDOMExternalizerUtil.writeField(it, "deps", deps.toString())
+            JDOMExternalizerUtil.writeField(it, "force", force.toString())
+            JDOMExternalizerUtil.writeField(it, "rolesDir", rolesDir)
+            JDOMExternalizerUtil.writeField(it, "command", command)
+            JDOMExternalizerUtil.writeField(it, "rawOpts", rawOpts)
+            JDOMExternalizerUtil.writeField(it, "workDir", workDir)
+
+        }
         return
     }
 }
