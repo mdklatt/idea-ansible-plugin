@@ -64,12 +64,28 @@ class PosixCommandLineTest {
     }
 
     /**
+     * Test the createProcess() method.
+     */
+    @Test
+    fun testCreateProcess() {
+        val command = PosixCommandLine("echo", listOf("TEST"))
+        command.createProcess().apply {
+            assertEquals(0, waitFor())
+            assertEquals("TEST\n", String(inputStream.readBytes()))
+        }
+    }
+
+    /**
      * Test the withInput() method with a text value.
      */
     @Test
     fun testWithInputText() {
-        // Just a basic smoke test.
-        val command = PosixCommandLine("cmd")
-        assertNotNull(command.withInput("input"))
+        val command = PosixCommandLine("cat")
+        command.withInput("TEST")
+        command.createProcess().apply {
+            assertEquals(0, waitFor())
+            val stdout = inputStream.readBytes()  // subprocess's STDOUT
+            assertEquals("TEST", String(stdout))
+        }
     }
 }
