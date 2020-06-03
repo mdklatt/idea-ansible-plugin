@@ -6,16 +6,8 @@ import com.intellij.util.execution.ParametersListUtil
 
 /**
  * Manage an external process that uses POSIX-style command line arguments.
- *
- * @param exePath: path to executable
- * @param arguments: positional arguments
- * @param options: POSIX-style options
  */
-class PosixCommandLine(
-    exePath: String,
-    arguments: List<String> = emptyList(),
-    options: Map<String, Any?> = emptyMap()
-) : GeneralCommandLine() {
+class PosixCommandLine() : GeneralCommandLine() {
 
     companion object {
         /**
@@ -43,10 +35,14 @@ class PosixCommandLine(
          * @param args: argument expression to split
          * @return: sequence of arguments
          */
-        fun split(args: String) = ParametersListUtil.parse(args)
+        fun split(args: String): List<String> = ParametersListUtil.parse(args)
     }
 
-    init {
+    /**
+     *
+     */
+    internal constructor(exePath: String, arguments: List<String> = emptyList(),
+            options: Map<String, Any?> = emptyMap()): this() {
         withExePath(exePath)
         addOptions(options)
         addParameters(arguments)
@@ -84,10 +80,39 @@ class PosixCommandLine(
      * @see #withInput(File?)
      */
     fun withInput(text: String): PosixCommandLine {
-        // TODO: Is there a way to create an in-memory File object?
-        val file = createTempFile()
-        file.writeText(text)
-        withInput(file)
+        // This is problematic for working with sensitive data, e.g. password
+        // prompts. While the temporary file will be deleted upon exit from the
+        // JVM, there are no doubt failure modes that prevent the file from
+        // being deleted. Even if deleting is successful, presumably the JVM
+        // doesn't exit until the IDE is closed, so the sensitive data could
+        // persist on disk for a long time.
+        createTempFile().let {
+            it.deleteOnExit()
+            it.writeText(text)
+            withInput(it)
+        }
         return this
     }
+
+//    /**
+//     * Create the external process used to execute this command.
+//     *
+//     * @return external process
+//     */
+//    override fun createProcess(): Process {
+//        // This is an attempt redirecting STDIN to a subprocess via a memory
+//        // buffer instead of a disk file (see withInput). Unfortunately,
+//        // neither the base class API nor the ProcessBuilder API (see
+//        // buildProcess) provide a way to access the underlying Process until
+//        // after it has been started, at which point it's too late to modify
+//        // its I/O handles.
+//        // FIXME: Doesn't work because process has already been started.
+//        return super.createProcess().apply {
+//            // Note that the Process's _output_ stream is used to push data to
+//            // the subprocess _input_ stream,
+//            // TODO: Use text from withInput() call.
+//            outputStream.write("Data for STDIN".toByteArray())
+//            outputStream.flush()
+//        }
+//    }
 }
