@@ -9,7 +9,7 @@ jdk:
 
 branches:
   only:
-    - master 
+    - main
     - dev
 
 # See <https://docs.travis-ci.com/user/languages/java/#projects-using-gradle>.
