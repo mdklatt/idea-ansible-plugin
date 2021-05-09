@@ -2,6 +2,7 @@ package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.util.execution.ParametersListUtil
+import java.io.CharArrayWriter
 
 
 /**
@@ -72,41 +73,75 @@ class PosixCommandLine() : GeneralCommandLine() {
     }
 
     /**
-     * Redirect input.
+     * Redirect STDIN.
      *
-     * @param text: text value to use as input
+     * @param input: STDIN contents
      * @return self reference
      *
      * @see #withInput(File?)
      */
-    fun withInput(text: String): PosixCommandLine {
-        // This is problematic for working with sensitive data, e.g. password
-        // prompts. While the temporary file will be deleted upon exit from the
-        // JVM, there are no doubt failure modes that prevent the file from
-        // being deleted. Even if deleting is successful, presumably the JVM
-        // doesn't exit until the IDE is closed, so the sensitive data could
-        // persist on disk for a long time.
+    fun withInput(input: String): PosixCommandLine {
         createTempFile().let {
             it.deleteOnExit()
-            it.writeText(text)
+            it.writeText(input)
             withInput(it)
         }
         return this
     }
 
-//    /**
-//     * Create the external process used to execute this command.
-//     *
-//     * @return external process
-//     */
-//    override fun createProcess(): Process {
-//        // This is an attempt redirecting STDIN to a subprocess via a memory
-//        // buffer instead of a disk file (see withInput). Unfortunately,
-//        // neither the base class API nor the ProcessBuilder API (see
-//        // buildProcess) provide a way to access the underlying Process until
-//        // after it has been started, at which point it's too late to modify
-//        // its I/O handles.
-//        // FIXME: Doesn't work because process has already been started.
+    /**
+     * Redirect STDIN.
+     *
+     * This overload is intended for use with sensitive data, e.g. passwords.
+     *
+     * @param input: STDIN contents
+     * @return: self reference
+     *
+     * @see #withInput(File?)
+     */
+    fun withInput(input: CharArray): PosixCommandLine {
+        // This is problematic for working with sensitive data. While the
+        // temporary file will be removed upon exit from the JVM, there are no
+        // doubt failure modes that prevent the file from being deleted. Even
+        // if removal is successful, presumably the JVM doesn't exit until the
+        // IDE is closed, so the sensitive data could
+        // persist on disk for a long time.
+        val buffer = CharArrayWriter(input.size)
+        buffer.write(input)
+        createTempFile().let {
+            it.deleteOnExit()
+            val writer = it.bufferedWriter()
+            buffer.writeTo(writer)
+            writer.flush()
+            withInput(it)
+        }
+        return this
+    }
+
+    /**
+     * @param builder:
+     * @return
+     */
+    override fun buildProcess(builder: ProcessBuilder): ProcessBuilder {
+        return builder
+    }
+
+    /**
+     * Create the external process used to execute this command.
+     *
+     * @return external process
+     */
+    override fun createProcess(): Process {
+        // This is an attempt redirecting STDIN to a subprocess via a memory
+        // buffer instead of a disk file (see withInput). Unfortunately,
+        // neither the base class API nor the ProcessBuilder API (see
+        // buildProcess) provide a way to access the underlying Process until
+        // after it has been started, at which point it's too late to modify
+        // its I/O handles.
+        // FIXME: Doesn't work because process has already been started.
+
+        val process = super.createProcess()
+        return process
 //        return super.createProcess().apply {
 //            // Note that the Process's _output_ stream is used to push data to
 //            // the subprocess _input_ stream,
@@ -114,5 +149,5 @@ class PosixCommandLine() : GeneralCommandLine() {
 //            outputStream.write("Data for STDIN".toByteArray())
 //            outputStream.flush()
 //        }
-//    }
+    }
 }

@@ -88,4 +88,18 @@ class PosixCommandLineTest {
             assertEquals("TEST", String(stdout))
         }
     }
+
+    /**
+     * Test the withInput() method with a data value.
+     */
+    @Test
+    fun testWithInputData() {
+        val command = PosixCommandLine("cat")
+        command.withInput(charArrayOf('T', 'E', 'S', 'T'))
+        command.createProcess().apply {
+            assertEquals(0, waitFor())
+            val stdout = inputStream.readBytes()  // subprocess's STDOUT
+            assertEquals("TEST", String(stdout))
+        }
+    }
 }
