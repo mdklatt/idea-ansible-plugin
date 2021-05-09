@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
 import software.mdklatt.idea.ansible.run.PlaybookConfigurationFactory
 import software.mdklatt.idea.ansible.run.PlaybookRunSettings
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 
@@ -45,9 +46,12 @@ class PlaybookRunSettingsTest {
     private var settings = PlaybookRunSettings().apply {
         playbooks = listOf("playbook.yml")
         inventory = listOf("hosts.yml")
+        host = "hostname"
+        sudoPrompt = true
         variables= listOf("key1=val1", "key2=val2")
         tags = listOf("abc", "xyz")
         rawOpts = "one \"two\""
+        command = "/path/to/ansible-playbook"
     }
 
     /**
@@ -59,6 +63,7 @@ class PlaybookRunSettingsTest {
             assertEquals(emptyList(), playbooks)
             assertEquals(emptyList(), inventory)
             assertEquals("", host)
+            assertFalse(sudoPrompt)
             assertEquals(emptyList(), tags)
             assertEquals(emptyList(), variables)
             assertEquals("", rawOpts)
@@ -77,6 +82,7 @@ class PlaybookRunSettingsTest {
             assertEquals(playbooks, settings.playbooks)
             assertEquals(inventory, settings.inventory)
             assertEquals(host, settings.host)
+            assertEquals(sudoPrompt, settings.sudoPrompt)
             assertEquals(tags, settings.tags)
             assertEquals(variables, settings.variables)
             assertEquals(rawOpts, settings.rawOpts)

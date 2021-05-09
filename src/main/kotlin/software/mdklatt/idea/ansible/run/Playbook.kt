@@ -9,13 +9,17 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.ui.RawCommandLineEditor
+import com.intellij.ui.components.CheckBox
 import com.intellij.ui.layout.panel
 import com.intellij.util.getOrCreate
 import org.jdom.Element
+import java.lang.RuntimeException
 import javax.swing.JComponent
+import javax.swing.JPasswordField
 import javax.swing.JTextField
 
 
@@ -124,6 +128,7 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
                 FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor())
     }
     var host = JTextField("")
+    var sudoPrompt = CheckBox("Prompt for sudo password")
     var tags = JTextField("")
     var variables = JTextField("")
     var command = TextFieldWithBrowseButton().apply {
@@ -146,7 +151,10 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
         return panel{
             row("Playbooks:") { playbooks() }
             row("Inventory:") { inventory() }
-            row("Host:") { host() }
+            row("Host:") {
+                host()
+                sudoPrompt()
+            }
             row("Tags:") { tags() }
             row("Extra variables:") { variables() }
             titledRow("Environment") {}
@@ -166,6 +174,7 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             playbooks.text = if (settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
             inventory.text = if (settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
             host.text = settings.host
+            sudoPrompt.isSelected = settings.sudoPrompt
             tags.text = settings.tags.joinToString(" ")
             variables.text = settings.variables.joinToString(" ")
             command.text = settings.command
@@ -184,14 +193,17 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
         // This apparently gets called for every key press, so performance is
         // critical.
         // TODO: Get file list for playbooks and inventory.
-        config.settings = PlaybookRunSettings()
-        config.settings.playbooks = listOf(playbooks.text)
-        config.settings.inventory = listOf(inventory.text)
-        config.settings.host = host.text
-        config.settings.tags = tags.text.split(" ")
-        config.settings.variables = variables.text.split(" ")
-        config.settings.rawOpts = rawOpts.text
-        config.settings.workDir = workDir.text
+        config.apply {
+            settings = PlaybookRunSettings()
+            settings.playbooks = listOf(playbooks.text)
+            settings.inventory = listOf(inventory.text)
+            settings.host = host.text
+            settings.sudoPrompt = sudoPrompt.isSelected
+            settings.tags = tags.text.split(" ")
+            settings.variables = variables.text.split(" ")
+            settings.rawOpts = rawOpts.text
+            settings.workDir = workDir.text
+        }
         return
     }
 }
@@ -205,7 +217,7 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
         CommandLineState(environment) {
 
     /**
-     * Starts the process.
+     * Start the process.
      *
      * @return the handler for the running process
      * @throws ExecutionException if the execution failed.
@@ -224,6 +236,13 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
             "tags" to nullBlank(settings.tags.joinToString(",")),
             "extra-vars" to nullBlank(settings.variables.joinToString(" "))
         )
+        if (settings.sudoPrompt) {
+            val dialog = PasswordDialog("Sudo password for ${settings.host}")
+            val password = dialog.prompt() ?: throw RuntimeException("no password")
+            options["ask-become-pass"] = true
+            command.withInput(password.joinToString(""))
+            password.fill('\u0000')  // overwrite value
+        }
         command.addOptions(options)
         command.addParameters(PosixCommandLine.split(settings.rawOpts))
         command.addParameters(settings.playbooks)
@@ -259,11 +278,12 @@ class PlaybookRunSettings internal constructor() {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
     var host = ""
-    var tags = emptyList<String>()  // TODO: Set
+    var sudoPrompt = false
+    var tags = emptyList<String>()
         set(value) {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
-    var variables = emptyList<String>()  // TODO: Set
+    var variables = emptyList<String>()
         set(value) {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
@@ -282,6 +302,7 @@ class PlaybookRunSettings internal constructor() {
             playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(DELIMIT)
             inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(DELIMIT)
             host = JDOMExternalizerUtil.readField(it, "host", "")
+            sudoPrompt = JDOMExternalizerUtil.readField(it, "sudoPrompt", "false").toBoolean()
             tags = JDOMExternalizerUtil.readField(it, "tags", "").split(DELIMIT)
             variables = JDOMExternalizerUtil.readField(it, "variables", "").split(DELIMIT)
             command = JDOMExternalizerUtil.readField(it, "command", "")
@@ -301,6 +322,7 @@ class PlaybookRunSettings internal constructor() {
             JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "host", host)
+            JDOMExternalizerUtil.writeField(it, "sudoPrompt", sudoPrompt.toString())
             JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "command", command)
@@ -308,5 +330,47 @@ class PlaybookRunSettings internal constructor() {
             JDOMExternalizerUtil.writeField(it, "workDir", workDir)
         }
         return
+    }
+}
+
+
+/**
+ * Modal dialog for a password prompt.
+ */
+class PasswordDialog(private val prompt: String ="Password") : DialogWrapper(false) {
+
+    private var field = JPasswordField("", 20)
+    private var value = charArrayOf()
+
+    init {
+        init()
+        title = "Password"
+    }
+
+    /**
+     * Prompt the user for the password.
+     *
+     * @return user input
+     */
+    fun prompt(): CharArray? = if (showAndGet()) value else null
+
+    /**
+     * Define dialog contents.
+     *
+     * @return: dialog contents
+     */
+    protected override fun createCenterPanel(): JComponent {
+        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
+        return panel{
+            row("${prompt}:") { field() }
+        }
+    }
+
+    /**
+     * Event handler for the OK button.
+     */
+    protected override fun doOKAction() {
+        value = field.password
+        super.doOKAction()
     }
 }
