@@ -264,14 +264,14 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
 /**
  * Manage PlaybookRunConfiguration runtime settings.
  */
-class PlaybookRunSettings {
+class PlaybookRunSettings internal constructor() {
 
     companion object {
         private const val DELIMIT = "|"
         private const val JDOM_TAG = "ansible-playbook"
     }
 
-    private var id: UUID
+    private var id: UUID? = null
 
     var playbooks = emptyList<String>()
         set(value) {
@@ -296,13 +296,6 @@ class PlaybookRunSettings {
     var rawOpts = ""
     var workDir = ""
 
-
-    /**
-     * Construct default settings.
-     */
-    internal constructor() {
-        id = UUID.randomUUID()
-    }
 
     /**
      * Construct object from a JDOM element.
@@ -336,6 +329,9 @@ class PlaybookRunSettings {
          element.getOrCreate(JDOM_TAG).let {
             if (!default) {
                 // Don't save an ID with the config template.
+                if (id == null) {
+                    id = UUID.randomUUID()
+                }
                 JDOMExternalizerUtil.writeField(it, "id", id.toString())
             }
             JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(DELIMIT))
