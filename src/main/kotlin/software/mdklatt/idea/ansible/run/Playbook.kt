@@ -51,7 +51,7 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
      *
      * @return: unique ID
      */
-    override fun getId() = this::class.java.simpleName
+    override fun getId(): String = this::class.java.simpleName
 }
 
 
@@ -231,15 +231,12 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
      * @see com.intellij.execution.process.OSProcessHandler
      */
     override fun startProcess(): ProcessHandler {
-        fun nullBlank(str: String): String? {
-            return if (str.isNotBlank()) str else null
-        }
         val command = PosixCommandLine(settings.command)
         val options = mutableMapOf<String, Any?>(
-            "limit" to nullBlank(settings.host),
-            "inventory" to nullBlank(settings.inventory.joinToString(",")),
-            "tags" to nullBlank(settings.tags.joinToString(",")),
-            "extra-vars" to nullBlank(settings.variables.joinToString(" "))
+            "limit" to settings.host.ifEmpty { null },
+            "inventory" to settings.inventory.joinToString(",").ifEmpty { null },
+            "tags" to settings.tags.joinToString(",").ifEmpty { null },
+            "extra-vars" to settings.variables.joinToString(" ").ifEmpty { null }
         )
         if (settings.sudoPrompt) {
             val dialog = PasswordDialog("Sudo password for ${settings.host}")
@@ -295,7 +292,7 @@ class PlaybookRunSettings {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
     var command = ""
-        get() = if (field.isNotBlank()) field else "ansible-playbook"
+        get() = field.ifEmpty { "ansible-playbook" }
     var rawOpts = ""
     var workDir = ""
 
