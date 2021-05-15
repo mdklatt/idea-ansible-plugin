@@ -77,7 +77,7 @@ class PlaybookRunSettingsTest {
     @Test
     fun testJdomElement() {
         val element = Element("configuration")
-        settings.write(element)
+        settings.store(element)
         PlaybookRunSettings(element).apply {
             assertEquals(playbooks, settings.playbooks)
             assertEquals(inventory, settings.inventory)

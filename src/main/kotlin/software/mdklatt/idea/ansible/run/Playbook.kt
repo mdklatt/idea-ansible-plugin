@@ -18,6 +18,7 @@ import com.intellij.ui.layout.panel
 import com.intellij.util.getOrCreate
 import org.jdom.Element
 import java.lang.RuntimeException
+import java.util.*
 import javax.swing.JComponent
 import javax.swing.JPasswordField
 import javax.swing.JTextField
@@ -106,7 +107,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      */
     override fun writeExternal(element: Element) {
         super.writeExternal(element)
-        settings.write(element)
+        settings.store(element)
         return
     }
 }
@@ -194,7 +195,12 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
         // critical.
         // TODO: Get file list for playbooks and inventory.
         config.apply {
-            settings = PlaybookRunSettings()
+            // If a new PlaybookRunSettings object isn't created, multiple
+            // configurations seem to share the same settings, i.e. the
+            // values for one configuration will be copied to multiple
+            // configurations on save. This is not apparent until the project
+            // is reloaded. TODO: Why does this happen?
+            settings = PlaybookRunSettings()  // prevent cross contamination
             settings.playbooks = listOf(playbooks.text)
             settings.inventory = listOf(inventory.text)
             settings.host = host.text
@@ -207,7 +213,6 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
         return
     }
 }
-
 
 
 /**
@@ -262,14 +267,16 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
 /**
  * Manage PlaybookRunConfiguration runtime settings.
  */
-class PlaybookRunSettings internal constructor() {
+class PlaybookRunSettings {
 
     companion object {
         private const val DELIMIT = "|"
         private const val JDOM_TAG = "ansible-playbook"
     }
 
-    var playbooks = emptyList<String>()  // TODO: add set() for [""] -> []
+    private var id: UUID
+
+    var playbooks = emptyList<String>()
         set(value) {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
@@ -292,6 +299,14 @@ class PlaybookRunSettings internal constructor() {
     var rawOpts = ""
     var workDir = ""
 
+
+    /**
+     * Construct default settings.
+     */
+    internal constructor() {
+        id = UUID.randomUUID()
+    }
+
     /**
      * Construct object from a JDOM element.
      *
@@ -299,6 +314,8 @@ class PlaybookRunSettings internal constructor() {
      */
     internal constructor(element: Element) : this() {
         element.getOrCreate(JDOM_TAG).let {
+            val str = JDOMExternalizerUtil.readField(it, "id", "")
+            id = if (str.isEmpty()) UUID.randomUUID() else UUID.fromString(str)
             playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(DELIMIT)
             inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(DELIMIT)
             host = JDOMExternalizerUtil.readField(it, "host", "")
@@ -313,12 +330,17 @@ class PlaybookRunSettings internal constructor() {
     }
 
     /**
-     * Write settings to a JDOM element.
+     * Store settings.
      *
-     * @param element: output element
+     * @param element: JDOM element
      */
-    fun write(element: Element) {
+    fun store(element: Element) {
+        val default = element.getAttributeValue("default")?.toBoolean() ?: false
          element.getOrCreate(JDOM_TAG).let {
+            if (!default) {
+                // Don't save an ID with the config template.
+                JDOMExternalizerUtil.writeField(it, "id", id.toString())
+            }
             JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "host", host)
@@ -337,7 +359,7 @@ class PlaybookRunSettings internal constructor() {
 /**
  * Modal dialog for a password prompt.
  */
-class PasswordDialog(private val prompt: String ="Password") : DialogWrapper(false) {
+private class PasswordDialog(private val prompt: String ="Password") : DialogWrapper(false) {
 
     private var field = JPasswordField("", 20)
     private var value = charArrayOf()
