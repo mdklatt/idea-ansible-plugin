@@ -1,11 +1,15 @@
 package software.mdklatt.idea.ansible.run
 
+import com.intellij.credentialStore.CredentialAttributes
+import com.intellij.credentialStore.Credentials
+import com.intellij.credentialStore.generateServiceName
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.ide.passwordSafe.PasswordSafe
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
@@ -17,7 +21,7 @@ import com.intellij.ui.components.CheckBox
 import com.intellij.ui.layout.panel
 import com.intellij.util.getOrCreate
 import org.jdom.Element
-import java.lang.RuntimeException
+import java.awt.event.ItemEvent
 import java.util.*
 import javax.swing.JComponent
 import javax.swing.JPasswordField
@@ -129,7 +133,8 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
                 FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor())
     }
     var host = JTextField("")
-    var sudoPrompt = CheckBox("Prompt for sudo password")
+    var password = JPasswordField("")
+    var passwordPrompt = CheckBox("Prompt for password")
     var tags = JTextField("")
     var variables = JTextField("")
     var command = TextFieldWithBrowseButton().apply {
@@ -149,12 +154,22 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
      */
     override fun createEditor(): JComponent {
         // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
+        passwordPrompt.addItemListener{
+            if (it.stateChange == ItemEvent.SELECTED) {
+                password.text = ""
+                password.isEditable = false
+            }
+            else {
+                password.isEditable = true
+            }
+        }
         return panel{
             row("Playbooks:") { playbooks() }
             row("Inventory:") { inventory() }
-            row("Host:") {
-                host()
-                sudoPrompt()
+            row("Host:")  { host() }
+            row("Sudo password:") {
+                password()
+                passwordPrompt()
             }
             row("Tags:") { tags() }
             row("Extra variables:") { variables() }
@@ -175,7 +190,10 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             playbooks.text = if (settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
             inventory.text = if (settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
             host.text = settings.host
-            sudoPrompt.isSelected = settings.sudoPrompt
+            passwordPrompt.isSelected = settings.passwordPrompt
+            if (!passwordPrompt.isSelected) {
+                password.text = settings.password.joinToString("")
+            }
             tags.text = settings.tags.joinToString(" ")
             variables.text = settings.variables.joinToString(" ")
             command.text = settings.command
@@ -196,15 +214,18 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
         // TODO: Get file list for playbooks and inventory.
         config.apply {
             // If a new PlaybookRunSettings object isn't created, multiple
-            // configurations seem to share the same settings, i.e. the
-            // values for one configuration will be copied to multiple
-            // configurations on save. This is not apparent until the project
-            // is reloaded. TODO: Why does this happen?
+            // configurations seem to share the same settings, i.e. the values
+            // for one configuration will be copied to multiple configurations
+            // on save. This is not apparent until the project is reloaded.
+            // TODO: Why does this happen?
             settings = PlaybookRunSettings()  // prevent cross contamination
             settings.playbooks = listOf(playbooks.text)
             settings.inventory = listOf(inventory.text)
             settings.host = host.text
-            settings.sudoPrompt = sudoPrompt.isSelected
+            settings.passwordPrompt = passwordPrompt.isSelected
+            if (!settings.passwordPrompt) {
+                settings.password = password.password
+            }
             settings.tags = tags.text.split(" ")
             settings.variables = variables.text.split(" ")
             settings.rawOpts = rawOpts.text
@@ -238,12 +259,13 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
             "tags" to settings.tags.joinToString(",").ifEmpty { null },
             "extra-vars" to settings.variables.joinToString(" ").ifEmpty { null }
         )
-        if (settings.sudoPrompt) {
+        if (settings.passwordPrompt) {
             val dialog = PasswordDialog("Sudo password for ${settings.host}")
-            val password = dialog.prompt() ?: throw RuntimeException("no password")
+            settings.password = dialog.prompt() ?: throw RuntimeException("no password")
+        }
+        if (settings.password.isNotEmpty()) {
             options["ask-become-pass"] = true
-            command.withInput(password.joinToString(""))
-            password.fill('\u0000')  // overwrite value
+            command.withInput(settings.password.joinToString(""))
         }
         command.addOptions(options)
         command.addParameters(PosixCommandLine.split(settings.rawOpts))
@@ -282,7 +304,8 @@ class PlaybookRunSettings internal constructor() {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
     var host = ""
-    var sudoPrompt = false
+    var password = charArrayOf()
+    var passwordPrompt = false
     var tags = emptyList<String>()
         set(value) {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
@@ -309,13 +332,17 @@ class PlaybookRunSettings internal constructor() {
             playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(DELIMIT)
             inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(DELIMIT)
             host = JDOMExternalizerUtil.readField(it, "host", "")
-            sudoPrompt = JDOMExternalizerUtil.readField(it, "sudoPrompt", "false").toBoolean()
+            passwordPrompt = JDOMExternalizerUtil.readField(it, "passwordPrompt", "false").toBoolean()
             tags = JDOMExternalizerUtil.readField(it, "tags", "").split(DELIMIT)
             variables = JDOMExternalizerUtil.readField(it, "variables", "").split(DELIMIT)
             command = JDOMExternalizerUtil.readField(it, "command", "")
             rawOpts = JDOMExternalizerUtil.readField(it, "rawOpts", "")
             workDir = JDOMExternalizerUtil.readField(it, "workDir", "")
         }
+        // TODO: Refactor tp separate function.
+        val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
+        val credentialAttributes = CredentialAttributes(service)
+        password = PasswordSafe.instance.getPassword(credentialAttributes)?.toCharArray() ?: charArrayOf()
         return
     }
 
@@ -337,13 +364,19 @@ class PlaybookRunSettings internal constructor() {
             JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "host", host)
-            JDOMExternalizerUtil.writeField(it, "sudoPrompt", sudoPrompt.toString())
+            JDOMExternalizerUtil.writeField(it, "passwordPrompt", passwordPrompt.toString())
             JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(DELIMIT))
             JDOMExternalizerUtil.writeField(it, "command", command)
             JDOMExternalizerUtil.writeField(it, "rawOpts", rawOpts)
             JDOMExternalizerUtil.writeField(it, "workDir", workDir)
         }
+
+        // TODO: Refactor tp separate function.
+        val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
+        val credentialAttributes = CredentialAttributes(service)
+        val credentials = if (password.isNotEmpty()) Credentials(null, password) else null  // delete credentials if no password is defined
+        PasswordSafe.instance.set(credentialAttributes, credentials)
         return
     }
 }
