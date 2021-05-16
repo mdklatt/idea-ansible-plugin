@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
 import software.mdklatt.idea.ansible.run.PlaybookConfigurationFactory
-import software.mdklatt.idea.ansible.run.PlaybookRunSettings
+import software.mdklatt.idea.ansible.run.PlaybookSettings
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -42,9 +42,9 @@ class PlaybookConfigurationFactoryTest {
 /**
  * Unit tests for the PlaybookRunSettings class.
  */
-class PlaybookRunSettingsTest {
+class PlaybookSettingsTest {
 
-    private var settings = PlaybookRunSettings().apply {
+    private var settings = PlaybookSettings().apply {
         playbooks = listOf("playbook.yml")
         inventory = listOf("hosts.yml")
         host = "hostname"
@@ -60,7 +60,7 @@ class PlaybookRunSettingsTest {
      */
     @Test
     fun testCtor() {
-        PlaybookRunSettings().apply {
+        PlaybookSettings().apply {
             assertEquals(emptyList(), playbooks)
             assertEquals(emptyList(), inventory)
             assertEquals("", host)
@@ -82,8 +82,11 @@ class PlaybookRunSettingsTest {
         // TODO: Test password storage.
         // uuid = "91bde0ce-f06b-43da-ab39-07bb5eb897a2"
         val element = Element("configuration")
-        settings.store(element)
-        PlaybookRunSettings(element).apply {
+        settings.save(element)
+        settings = PlaybookSettings()
+        val newSettings = PlaybookSettings()
+        newSettings.load(element)
+        newSettings.apply {
             assertEquals(playbooks, settings.playbooks)
             assertEquals(inventory, settings.inventory)
             assertEquals(host, settings.host)
@@ -100,7 +103,7 @@ class PlaybookRunSettingsTest {
      */
     @Test
     fun testCommand() {
-        PlaybookRunSettings().apply {
+        PlaybookSettings().apply {
             command = ""
             assertEquals("ansible-playbook", command)
             command = "abc"

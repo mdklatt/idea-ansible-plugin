@@ -58,7 +58,7 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
 class GalaxyRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
         RunConfigurationBase<RunProfileState>(project, factory, name) {
 
-    var settings = GalaxyRunSettings()
+    var settings = GalaxySettings()
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
@@ -89,7 +89,7 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
      */
     override fun readExternal(element: Element) {
         super.readExternal(element)
-        settings = GalaxyRunSettings(element)
+        settings.load(element)
         return
     }
 
@@ -102,7 +102,7 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
      */
     override fun writeExternal(element: Element) {
         super.writeExternal(element)
-        settings.write(element)
+        settings.save(element)
         return
     }
 }
@@ -211,9 +211,9 @@ class GalaxySettingsEditor internal constructor(project: Project) : SettingsEdit
             deps.isSelected = settings.deps
             force.isSelected = settings.force
             rolesDir.text = settings.rolesDir
+            command.text = settings.command
             rawOpts.text = settings.rawOpts
             workDir.text = settings.workDir
-
         }
         return
     }
@@ -227,11 +227,12 @@ class GalaxySettingsEditor internal constructor(project: Project) : SettingsEdit
         // This apparently gets called for every key press, so performance is
         // critical.
         config.apply {
-            settings = GalaxyRunSettings()
+            settings = GalaxySettings()
             settings.requirements = requirements.text
             settings.deps = deps.isSelected
             settings.force = force.isSelected
             settings.rolesDir = rolesDir.text
+            settings.command = command.text
             settings.rawOpts = rawOpts.text
             settings.workDir = workDir.text
         }
@@ -243,54 +244,44 @@ class GalaxySettingsEditor internal constructor(project: Project) : SettingsEdit
 /**
  * Manage GalaxyRunConfiguration runtime settings.
  */
-class GalaxyRunSettings internal constructor() {
+class GalaxySettings internal constructor(): AnsibleSettings() {
 
-    companion object {
-        private const val JDOM_TAG = "ansible-galaxy"
-    }
+    override val commandName = "ansible-galaxy"
+    override val xmlTagName = "ansible-galaxy"
 
     var requirements = ""
     var deps = true
     var force = false
     var rolesDir = ""
-    var command = ""
-        get() = if (field.isNotBlank()) field else "ansible-galaxy"
-    var rawOpts = ""
-    var workDir = ""
 
     /**
-     * Construct object from a JDOM element.
+     * Load settings.
      *
      * @param element: input element
      */
-    internal constructor(element: Element) : this() {
-        element.getOrCreate(JDOM_TAG).let {
+    internal override fun load(element: Element) {
+        super.load(element)
+        element.getOrCreate(xmlTagName).let {
             requirements = JDOMExternalizerUtil.readField(it, "requirements", "")
             deps = JDOMExternalizerUtil.readField(it, "deps", "true").toBoolean()
             force = JDOMExternalizerUtil.readField(it, "force", "false").toBoolean()
             rolesDir = JDOMExternalizerUtil.readField(it, "rolesDir", "")
-            command = JDOMExternalizerUtil.readField(it, "command", "")
-            rawOpts = JDOMExternalizerUtil.readField(it, "rawOpts", "")
-            workDir = JDOMExternalizerUtil.readField(it, "workDir", "")
         }
         return
     }
 
     /**
-     * Write settings to a JDOM element.
+     * Save settings.
      *
      * @param element: output element
      */
-    fun write(element: Element) {
-        element.getOrCreate(JDOM_TAG).let {
+    internal override fun save(element: Element) {
+        super.save(element)
+        element.getOrCreate(xmlTagName).let {
             JDOMExternalizerUtil.writeField(it, "requirements", requirements)
             JDOMExternalizerUtil.writeField(it, "deps", deps.toString())
             JDOMExternalizerUtil.writeField(it, "force", force.toString())
             JDOMExternalizerUtil.writeField(it, "rolesDir", rolesDir)
-            JDOMExternalizerUtil.writeField(it, "command", command)
-            JDOMExternalizerUtil.writeField(it, "rawOpts", rawOpts)
-            JDOMExternalizerUtil.writeField(it, "workDir", workDir)
-
         }
         return
     }

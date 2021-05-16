@@ -3,7 +3,11 @@ package software.mdklatt.idea.ansible.run
 import com.intellij.execution.configurations.ConfigurationType
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.util.JDOMExternalizerUtil
+import com.intellij.util.getOrCreate
+import java.util.*
 import javax.swing.Icon
+import org.jdom.Element
 
 
 class AnsibleConfigurationType : ConfigurationType {
@@ -52,4 +56,60 @@ class AnsibleConfigurationType : ConfigurationType {
             GalaxyConfigurationFactory(this),
             PlaybookConfigurationFactory(this)
         )
+}
+
+
+/**
+ * Manage common Ansible configuration settings.
+ */
+abstract class AnsibleSettings protected constructor() {
+
+    protected abstract val commandName: String
+    protected abstract val xmlTagName: String
+
+    protected var id: UUID? = null
+
+    var command = ""
+        get() = field.ifEmpty { commandName }
+        set(value) { field = value.ifEmpty { commandName }}
+    var rawOpts = ""
+    var workDir = ""
+
+    /**
+     * Load stored settings.
+     *
+     * @param element:
+     */
+    internal open fun load(element: Element) {
+        element.getOrCreate(xmlTagName).let {
+            val str = JDOMExternalizerUtil.readField(it, "id", "")
+            id = if (str.isEmpty()) UUID.randomUUID() else UUID.fromString(str)
+            command = JDOMExternalizerUtil.readField(it, "command", "")
+            rawOpts = JDOMExternalizerUtil.readField(it, "rawOpts", "")
+            workDir = JDOMExternalizerUtil.readField(it, "workDir", "")
+        }
+        return
+    }
+
+    /**
+     * Save settings.
+     *
+     * @param element: JDOM element
+     */
+    internal open fun save(element: Element) {
+        val default = element.getAttributeValue("default")?.toBoolean() ?: false
+        element.getOrCreate(xmlTagName).let {
+            if (!default) {
+                // Don't save an ID with the config template.
+                if (id == null) {
+                    id = UUID.randomUUID()
+                }
+                JDOMExternalizerUtil.writeField(it, "id", id.toString())
+            }
+            JDOMExternalizerUtil.writeField(it, "command", command)
+            JDOMExternalizerUtil.writeField(it, "rawOpts", rawOpts)
+            JDOMExternalizerUtil.writeField(it, "workDir", workDir)
+        }
+        return
+    }
 }

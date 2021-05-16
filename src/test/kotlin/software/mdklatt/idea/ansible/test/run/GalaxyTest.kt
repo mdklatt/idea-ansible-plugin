@@ -9,7 +9,7 @@ import org.jdom.Element
 import org.junit.jupiter.api.Test
 import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
 import software.mdklatt.idea.ansible.run.GalaxyConfigurationFactory
-import software.mdklatt.idea.ansible.run.GalaxyRunSettings
+import software.mdklatt.idea.ansible.run.GalaxySettings
 
 
 /**
@@ -40,9 +40,9 @@ class GalaxyConfigurationFactoryTest {
 /**
  * Unit tests for the GalaxyRunSettings class.
  */
-class GalaxyRunSettingsTest {
+class GalaxySettingsTest {
 
-    private var settings = GalaxyRunSettings().apply {
+    private var settings = GalaxySettings().apply {
         requirements = "reqs.yml"
         rolesDir = "roles/"
         deps = false
@@ -57,7 +57,7 @@ class GalaxyRunSettingsTest {
      */
     @Test
     fun testCtor() {
-        GalaxyRunSettings().apply {
+        GalaxySettings().apply {
             assertEquals("", requirements)
             assertEquals(true, deps)
             assertEquals(false, force)
@@ -71,10 +71,12 @@ class GalaxyRunSettingsTest {
      * Test round-trip write/read with a JDOM Element.
      */
     @Test
-    fun testJdomElement() {
+    fun testPersistence() {
         val element = Element("configuration")
-        settings.write(element)
-        GalaxyRunSettings(element).apply {
+        settings.save(element)
+        val newSettings = GalaxySettings()
+        newSettings.load(element)
+        newSettings.apply {
             assertEquals(requirements, settings.requirements)
             assertEquals(rolesDir, settings.rolesDir)
             assertEquals(deps, settings.deps)
@@ -89,7 +91,7 @@ class GalaxyRunSettingsTest {
      */
     @Test
     fun testCommand() {
-        GalaxyRunSettings().apply {
+        GalaxySettings().apply {
             command = ""
             assertEquals("ansible-galaxy", command)
             command = "abc"

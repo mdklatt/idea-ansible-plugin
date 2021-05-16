@@ -67,7 +67,7 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
 class PlaybookRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
         RunConfigurationBase<RunProfileState>(project, factory, name) {
 
-    var settings = PlaybookRunSettings()
+    var settings = PlaybookSettings()
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
@@ -98,7 +98,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      */
     override fun readExternal(element: Element) {
         super.readExternal(element)
-        settings = PlaybookRunSettings(element)
+        settings.load(element)
         return
     }
 
@@ -111,7 +111,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      */
     override fun writeExternal(element: Element) {
         super.writeExternal(element)
-        settings.store(element)
+        settings.save(element)
         return
     }
 }
@@ -187,8 +187,8 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
      */
     override fun resetEditorFrom(config: PlaybookRunConfiguration) {
         config.apply {
-            playbooks.text = if (settings.playbooks.isNotEmpty()) config.settings.playbooks[0] else ""
-            inventory.text = if (settings.inventory.isNotEmpty()) config.settings.inventory[0] else ""
+            playbooks.text = if (settings.playbooks.isNotEmpty()) settings.playbooks[0] else ""
+            inventory.text = if (settings.inventory.isNotEmpty()) settings.inventory[0] else ""
             host.text = settings.host
             passwordPrompt.isSelected = settings.passwordPrompt
             if (!passwordPrompt.isSelected) {
@@ -218,7 +218,7 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             // for one configuration will be copied to multiple configurations
             // on save. This is not apparent until the project is reloaded.
             // TODO: Why does this happen?
-            settings = PlaybookRunSettings()  // prevent cross contamination
+            settings = PlaybookSettings()  // prevent cross contamination
             settings.playbooks = listOf(playbooks.text)
             settings.inventory = listOf(inventory.text)
             settings.host = host.text
@@ -239,7 +239,7 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
 /**
  * TODO
  */
-class PlaybookCommandLineState internal constructor(private val settings: PlaybookRunSettings, environment: ExecutionEnvironment) :
+class PlaybookCommandLineState internal constructor(private val settings: PlaybookSettings, environment: ExecutionEnvironment) :
         CommandLineState(environment) {
 
     /**
@@ -284,16 +284,14 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
 
 
 /**
- * Manage PlaybookRunConfiguration runtime settings.
+ * Manage PlaybookRunConfiguration settings.
  */
-class PlaybookRunSettings internal constructor() {
+class PlaybookSettings internal constructor(): AnsibleSettings() {
 
-    companion object {
-        private const val DELIMIT = "|"
-        private const val JDOM_TAG = "ansible-playbook"
-    }
+    override val commandName = "ansible-playbook"
+    override val xmlTagName = "ansible-playbook"
 
-    private var id: UUID? = null
+    private val delimit =  "|"
 
     var playbooks = emptyList<String>()
         set(value) {
@@ -314,30 +312,21 @@ class PlaybookRunSettings internal constructor() {
         set(value) {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
-    var command = ""
-        get() = field.ifEmpty { "ansible-playbook" }
-    var rawOpts = ""
-    var workDir = ""
-
 
     /**
-     * Construct object from a JDOM element.
+     * Load stored settings.
      *
-     * @param element: input element
+     * @param element:
      */
-    internal constructor(element: Element) : this() {
-        element.getOrCreate(JDOM_TAG).let {
-            val str = JDOMExternalizerUtil.readField(it, "id", "")
-            id = if (str.isEmpty()) UUID.randomUUID() else UUID.fromString(str)
-            playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(DELIMIT)
-            inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(DELIMIT)
+    internal override fun load(element: Element) {
+        super.load(element)
+        element.getOrCreate(xmlTagName).let {
+            playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(delimit)
+            inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(delimit)
             host = JDOMExternalizerUtil.readField(it, "host", "")
             passwordPrompt = JDOMExternalizerUtil.readField(it, "passwordPrompt", "false").toBoolean()
-            tags = JDOMExternalizerUtil.readField(it, "tags", "").split(DELIMIT)
-            variables = JDOMExternalizerUtil.readField(it, "variables", "").split(DELIMIT)
-            command = JDOMExternalizerUtil.readField(it, "command", "")
-            rawOpts = JDOMExternalizerUtil.readField(it, "rawOpts", "")
-            workDir = JDOMExternalizerUtil.readField(it, "workDir", "")
+            tags = JDOMExternalizerUtil.readField(it, "tags", "").split(delimit)
+            variables = JDOMExternalizerUtil.readField(it, "variables", "").split(delimit)
         }
         // TODO: Refactor tp separate function.
         val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
@@ -347,29 +336,19 @@ class PlaybookRunSettings internal constructor() {
     }
 
     /**
-     * Store settings.
+     * Save settings.
      *
      * @param element: JDOM element
      */
-    fun store(element: Element) {
-        val default = element.getAttributeValue("default")?.toBoolean() ?: false
-         element.getOrCreate(JDOM_TAG).let {
-            if (!default) {
-                // Don't save an ID with the config template.
-                if (id == null) {
-                    id = UUID.randomUUID()
-                }
-                JDOMExternalizerUtil.writeField(it, "id", id.toString())
-            }
-            JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(DELIMIT))
-            JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(DELIMIT))
+    internal override fun save(element: Element) {
+        super.save(element)
+        element.getOrCreate(xmlTagName).let {
+            JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(delimit))
+            JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(delimit))
             JDOMExternalizerUtil.writeField(it, "host", host)
             JDOMExternalizerUtil.writeField(it, "passwordPrompt", passwordPrompt.toString())
-            JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(DELIMIT))
-            JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(DELIMIT))
-            JDOMExternalizerUtil.writeField(it, "command", command)
-            JDOMExternalizerUtil.writeField(it, "rawOpts", rawOpts)
-            JDOMExternalizerUtil.writeField(it, "workDir", workDir)
+            JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(delimit))
+            JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(delimit))
         }
 
         // TODO: Refactor tp separate function.
