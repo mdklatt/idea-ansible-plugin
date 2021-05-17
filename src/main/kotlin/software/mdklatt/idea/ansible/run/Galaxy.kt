@@ -46,7 +46,7 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
      *
      * @return: unique ID
      */
-    override fun getId() = this::class.java.simpleName
+    override fun getId(): String = this::class.java.simpleName
 }
 
 
@@ -123,16 +123,13 @@ class GalaxyCommandLineState internal constructor(private val config: GalaxyRunC
      * @see com.intellij.execution.process.OSProcessHandler
      */
     override fun startProcess(): ProcessHandler {
-        fun nullBlank(str: String): String? {
-            return if (str.isNotBlank()) str else null
-        }
         val settings = config.settings
         val command = PosixCommandLine(settings.command, listOf("install"))
-        val options = mutableMapOf<String, Any?>(
+        val options = mutableMapOf(
             "no-deps" to !settings.deps,
             "force" to settings.force,
-            "role-file" to nullBlank(settings.requirements),
-            "roles-path" to nullBlank(settings.rolesDir)
+            "role-file" to settings.requirements.ifEmpty { null },
+            "roles-path" to settings.rolesDir.ifEmpty { null }
         )
         command.addOptions(options)
         command.addParameters(PosixCommandLine.split(settings.rawOpts))
