@@ -137,6 +137,8 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
     var passwordPrompt = CheckBox("Prompt for password")
     var tags = JTextField("")
     var variables = JTextField("")
+
+    // Common Ansible settings.
     var command = TextFieldWithBrowseButton().apply {
         addBrowseFolderListener("Ansible Command", "", project,
                 FileChooserDescriptorFactory.createSingleFileDescriptor())
@@ -173,6 +175,8 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             }
             row("Tags:") { tags() }
             row("Extra variables:") { variables() }
+
+            // Common Ansible settings.
             titledRow("Environment") {}
             row("Ansible command:") { command() }
             row("Raw options:") { rawOpts() }
@@ -228,6 +232,9 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             }
             settings.tags = tags.text.split(" ")
             settings.variables = variables.text.split(" ")
+
+            // Common Ansible settings.
+            settings.command = command.text
             settings.rawOpts = rawOpts.text
             settings.workDir = workDir.text
         }
