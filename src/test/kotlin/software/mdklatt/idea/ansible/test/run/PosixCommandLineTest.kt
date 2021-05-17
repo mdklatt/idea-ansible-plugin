@@ -76,30 +76,49 @@ class PosixCommandLineTest {
     }
 
     /**
-     * Test the withInput() method with a text value.
+     * Test the withInput() method with text.
      */
     @Test
     fun testWithInputText() {
         val command = PosixCommandLine("cat")
         command.withInput("TEST")
         command.createProcess().apply {
+            // The Process instance's inputStream is actually STDOUT from the
+            // external command's point of view.
             assertEquals(0, waitFor())
-            val stdout = inputStream.readBytes()  // subprocess's STDOUT
-            assertEquals("TEST", String(stdout))
+            assertEquals("TEST", String(inputStream.readBytes()))
         }
     }
 
     /**
-     * Test the withInput() method with a data value.
+     * Test the withInput() method with data.
      */
     @Test
     fun testWithInputData() {
         val command = PosixCommandLine("cat")
         command.withInput(charArrayOf('T', 'E', 'S', 'T'))
         command.createProcess().apply {
+            // The Process instance's inputStream is actually STDOUT from the
+            // external command's point of view.
             assertEquals(0, waitFor())
-            val stdout = inputStream.readBytes()  // subprocess's STDOUT
-            assertEquals("TEST", String(stdout))
+            assertEquals("TEST", String(inputStream.readBytes()))
+        }
+    }
+
+    /**
+     * Test the withInput() method with a file.
+     */
+    @Test
+    fun testWithInputFile() {
+        val command = PosixCommandLine("cat")
+        createTempFile().let {
+            it.deleteOnExit()
+            it.writeText("TEST")
+            command.withInput(it)
+        }
+        command.createProcess().apply {
+            assertEquals(0, waitFor())
+            assertEquals("TEST", String(inputStream.readBytes()))
         }
     }
 }

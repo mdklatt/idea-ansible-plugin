@@ -2,7 +2,7 @@ package software.mdklatt.idea.ansible.run
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.util.execution.ParametersListUtil
-import java.io.CharArrayWriter
+import java.nio.CharBuffer
 
 
 /**
@@ -39,8 +39,11 @@ class PosixCommandLine() : GeneralCommandLine() {
         fun split(args: String): List<String> = ParametersListUtil.parse(args)
     }
 
+
+    private var inputData: ByteArray? = null
+
     /**
-     *
+     * Construct an instance.
      */
     internal constructor(exePath: String, arguments: List<String> = emptyList(),
             options: Map<String, Any?> = emptyMap()): this() {
@@ -73,7 +76,10 @@ class PosixCommandLine() : GeneralCommandLine() {
     }
 
     /**
-     * Redirect STDIN.
+     * Send input to the external command.
+     *
+     * To protect sensitive data, the input buffer is cleared after the command
+     * is executed, so this must be called prior to each invocation.
      *
      * @param input: STDIN contents
      * @return self reference
@@ -81,18 +87,15 @@ class PosixCommandLine() : GeneralCommandLine() {
      * @see #withInput(File?)
      */
     fun withInput(input: String): PosixCommandLine {
-        createTempFile().let {
-            it.deleteOnExit()
-            it.writeText(input)
-            withInput(it)
-        }
+        inputData = input.toByteArray()
         return this
     }
 
     /**
-     * Redirect STDIN.
+     * Send input to the external command.
      *
-     * This overload is intended for use with sensitive data, e.g. passwords.
+     * To protect sensitive data, the input buffer is cleared after the command
+     * is executed, so this must be called prior to each invocation.
      *
      * @param input: STDIN contents
      * @return: self reference
@@ -100,54 +103,44 @@ class PosixCommandLine() : GeneralCommandLine() {
      * @see #withInput(File?)
      */
     fun withInput(input: CharArray): PosixCommandLine {
-        // This is problematic for working with sensitive data. While the
-        // temporary file will be removed upon exit from the JVM, there are no
-        // doubt failure modes that prevent the file from being deleted. Even
-        // if removal is successful, presumably the JVM doesn't exit until the
-        // IDE is closed, so the sensitive data could
-        // persist on disk for a long time.
-        val buffer = CharArrayWriter(input.size)
-        buffer.write(input)
-        createTempFile().let {
-            it.deleteOnExit()
-            val writer = it.bufferedWriter()
-            buffer.writeTo(writer)
-            writer.flush()
-            withInput(it)
-        }
+        val bytes = Charsets.UTF_8.encode(CharBuffer.wrap(input))
+        inputData = bytes.array()
         return this
     }
 
     /**
-     * @param builder:
+     * Final configuration of the ProcessBuilder before starting the process.
+     *
+     * @param builder: filled ProcessBuilder
      * @return
      */
-    override fun buildProcess(builder: ProcessBuilder): ProcessBuilder {
+    protected override fun buildProcess(builder: ProcessBuilder): ProcessBuilder {
+        // Override the base class to redirect STDIN so it can be written to
+        // once the process has been started, cf. createProcess().
+        if (inputData != null) {
+            builder.redirectInput(ProcessBuilder.Redirect.PIPE)
+        }
         return builder
     }
 
     /**
-     * Create the external process used to execute this command.
+     * Create and start the external process.
      *
      * @return external process
      */
     override fun createProcess(): Process {
-        // This is an attempt redirecting STDIN to a subprocess via a memory
-        // buffer instead of a disk file (see withInput). Unfortunately,
-        // neither the base class API nor the ProcessBuilder API (see
-        // buildProcess) provide a way to access the underlying Process until
-        // after it has been started, at which point it's too late to modify
-        // its I/O handles.
-        // FIXME: Doesn't work because process has already been started.
-
+        // Override the base class to write to STDIN.
         val process = super.createProcess()
+        if (inputData != null) {
+            process.apply {
+                // The Process instance's output stream is actually STDIN from
+                // the external command's point of view.
+                outputStream.write(inputData!!)
+                outputStream.close()
+            }
+            inputData!!.fill(0)  // clear any sensitive data from memory
+            inputData = null
+        }
         return process
-//        return super.createProcess().apply {
-//            // Note that the Process's _output_ stream is used to push data to
-//            // the subprocess _input_ stream,
-//            // TODO: Use text from withInput() call.
-//            outputStream.write("Data for STDIN".toByteArray())
-//            outputStream.flush()
-//        }
     }
 }
