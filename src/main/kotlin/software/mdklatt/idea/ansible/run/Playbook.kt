@@ -3,6 +3,7 @@ package software.mdklatt.idea.ansible.run
 import com.intellij.credentialStore.CredentialAttributes
 import com.intellij.credentialStore.Credentials
 import com.intellij.credentialStore.generateServiceName
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.process.KillableColoredProcessHandler
@@ -41,7 +42,7 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
      * @return the run configuration instance.
      */
     override fun createTemplateConfiguration(project: Project) =
-            PlaybookRunConfiguration(project, this, "Anible Playbook")
+            PlaybookRunConfiguration(project, this, "Ansible Playbook")
 
     /**
      * The name of the run configuration variant created by this factory.

@@ -3,36 +3,138 @@
  */
 package software.mdklatt.idea.ansible.test.run
 
+import com.intellij.openapi.util.JDOMExternalizerUtil
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.util.getOrCreate
 import org.jdom.Element
-import org.junit.jupiter.api.Disabled
-import kotlin.test.assertEquals
-import org.junit.jupiter.api.Test
-import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
-import software.mdklatt.idea.ansible.run.PlaybookConfigurationFactory
-import software.mdklatt.idea.ansible.run.PlaybookSettings
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertArrayEquals
+import software.mdklatt.idea.ansible.run.*
+
+
+// The IDEA platform tests use JUnit3, so method names are used to determine
+// behavior instead of annotations. Notably, test classes are *not* constructed
+// before each test, so setUp() methods should be used for initialization.
+// Also, test functions must be named `testXXX` or they will not be found
+// during automatic discovery.
+
+
+/**
+ * Unit tests for the PlaybookRunSettings class.
+ */
+class PlaybookSettingsTest : BasePlatformTestCase() {
+
+    private lateinit var element: Element
+    private lateinit var settings: PlaybookSettings
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        element = Element("configuration")
+        settings = PlaybookSettings().apply {
+            playbooks = listOf("playbook.yml")
+            inventory = listOf("hosts.yml")
+            host = "hostname"
+            password = charArrayOf('P', 'A', 'S', 'S')
+            passwordPrompt = false
+            variables = listOf("key1=val1", "key2=val2")
+            tags = listOf("abc", "xyz")
+            command = "/path/to/ansible-playbook"
+            rawOpts = "one \"two\""
+            workDir = "/path/to/project"
+        }
+    }
+
+    /**
+     * Per-test cleanup.
+     */
+    override fun tearDown() {
+        settings.apply {
+            // Save empty password to remove it from the keychain.
+            password = charArrayOf()
+            save(element)
+        }
+        super.tearDown()
+    }
+
+    /**
+     * Test the constructor.
+     */
+    fun testConstructor() {
+        PlaybookSettings().apply {
+            assertEquals(emptyList<String>(), playbooks)
+            assertEquals(emptyList<String>(), inventory)
+            assertEquals("", host)
+            assertFalse(passwordPrompt)
+            assertEquals(emptyList<String>(), tags)
+            assertEquals(emptyList<String>(), variables)
+            assertEquals("ansible-playbook", command)
+            assertEquals("", rawOpts)
+            assertEquals("", workDir)
+        }
+    }
+
+    /**
+     * Test round-trip write/read of settings.
+     */
+    fun testPersistence() {
+        settings.save(element)
+        element.getOrCreate("ansible-playbook").let {
+            assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
+        }
+        PlaybookSettings().apply {
+            load(element)
+            assertEquals(listOf("playbook.yml"), playbooks)
+            assertEquals(listOf("hosts.yml"), inventory)
+            assertEquals("hostname", host)
+            assertArrayEquals(charArrayOf('P', 'A', 'S', 'S'), password)
+            assertEquals(false, passwordPrompt)
+            assertEquals(listOf("abc", "xyz"), tags)
+            assertEquals(listOf("key1=val1", "key2=val2"), variables)
+            assertEquals("/path/to/ansible-playbook", command)
+            assertEquals("one \"two\"", rawOpts)
+            assertEquals("/path/to/project", workDir)
+        }
+    }
+
+    /**
+     * Test the `command` attribute default value.
+     */
+    fun testCommandDefault() {
+        settings.apply {
+            command = ""
+            assertEquals("ansible-playbook", command)
+        }
+    }
+}
 
 
 /**
  * Unit tests for the PlaybookConfigurationFactory class.
  */
-class PlaybookConfigurationFactoryTest {
+class PlaybookConfigurationFactoryTest : BasePlatformTestCase() {
 
-    private val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
+    private lateinit var factory: PlaybookConfigurationFactory
 
     /**
-     * Test the id property.
+     * Per-test initialization.
      */
-    @Test
+    override fun setUp() {
+        super.setUp()
+        factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
+    }
+
+    /**
+     * Test the `id` property.
+     */
     fun testId() {
         assertTrue(factory.id.isNotBlank())
     }
 
     /**
-     * Test the name property.
+     * Test the `name` property.
      */
-    @Test
     fun testName() {
         assertTrue(factory.name.isNotBlank())
     }
@@ -40,74 +142,82 @@ class PlaybookConfigurationFactoryTest {
 
 
 /**
- * Unit tests for the PlaybookRunSettings class.
+ * Unit tests for the PlaybookRunConfiguration class.
  */
-class PlaybookSettingsTest {
+class PlaybookRunConfigurationTest : BasePlatformTestCase() {
 
-    private var settings = PlaybookSettings().apply {
-        playbooks = listOf("playbook.yml")
-        inventory = listOf("hosts.yml")
-        host = "hostname"
-        passwordPrompt = true
-        variables= listOf("key1=val1", "key2=val2")
-        tags = listOf("abc", "xyz")
-        rawOpts = "one \"two\""
-        command = "/path/to/ansible-playbook"
+    private lateinit var element: Element
+    private lateinit var config: PlaybookRunConfiguration
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        element = Element("configuration")
+        element.getOrCreate("ansible-playbook").let {
+            JDOMExternalizerUtil.writeField(it, "host", "hostname")
+            JDOMExternalizerUtil.writeField(it, "passwordPrompt", "true")
+        }
+        val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
+        config = PlaybookRunConfiguration(project, factory, "Ansible Playbook Test")
+    }
+
+    override fun tearDown() {
+        config.settings.apply {
+            // Save empty password to remove it from the keychain.
+            password = charArrayOf()
+            save(element)
+        }
+        super.tearDown()
+    }
+
+    fun testConstructor() {
+        assertEquals("Ansible Playbook Test", config.name)
     }
 
     /**
-     * Test the primary constructor.
+     * Test the readExternal() method.
      */
-    @Test
-    fun testCtor() {
-        PlaybookSettings().apply {
-            assertEquals(emptyList(), playbooks)
-            assertEquals(emptyList(), inventory)
-            assertEquals("", host)
-            assertFalse(passwordPrompt)
-            assertEquals(emptyList(), tags)
-            assertEquals(emptyList(), variables)
-            assertEquals("", rawOpts)
-            assertEquals("ansible-playbook", command)
+    fun testReadExternal() {
+        config.apply {
+            readExternal(element)
+            assertEquals("hostname", settings.host)
+            assertEquals(true, settings.passwordPrompt)
         }
     }
 
     /**
-     * Test round-trip write/read of settings.
+     * Test the writeExternal() method.
      */
-    @Test
-    @Disabled  // FIXME: NPE when using PasswordSafe. Does it need to mocked?
-    fun testPersistence() {
-        // TODO: Verify that "id" exists in element and is a valid UUID.
-        // TODO: Test password storage.
-        // uuid = "91bde0ce-f06b-43da-ab39-07bb5eb897a2"
-        val element = Element("configuration")
-        settings.save(element)
-        settings = PlaybookSettings()
-        val newSettings = PlaybookSettings()
-        newSettings.load(element)
-        newSettings.apply {
-            assertEquals(playbooks, settings.playbooks)
-            assertEquals(inventory, settings.inventory)
-            assertEquals(host, settings.host)
-            assertEquals(passwordPrompt, settings.passwordPrompt)
-            assertEquals(tags, settings.tags)
-            assertEquals(variables, settings.variables)
-            assertEquals(rawOpts, settings.rawOpts)
-            assertEquals(command, settings.command)
+    fun testWriteExternal() {
+        config.writeExternal(element)
+        element.getOrCreate("ansible-playbook").let {
+            assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
         }
     }
+}
 
+
+/**
+ * Unit tests for the PlaybookSettingsEditor class.
+ */
+class PlaybookSettingsEditorTest : BasePlatformTestCase() {
     /**
-     * Test the command attribute.
+     * Test the constructor.
      */
-    @Test
-    fun testCommand() {
-        PlaybookSettings().apply {
-            command = ""
-            assertEquals("ansible-playbook", command)
-            command = "abc"
-            assertEquals("abc", command)
+    fun testConstructor() {
+        PlaybookSettingsEditor(project).apply {
+            assertTrue(playbooks.text.isEmpty())
+            assertTrue(inventory.text.isEmpty())
+            assertTrue(host.text.isEmpty())
+            assertTrue(password.password.joinToString("").isEmpty())
+            assertFalse(passwordPrompt.isSelected)
+            assertTrue(tags.text.isEmpty())
+            assertTrue(variables.text.isEmpty())
+            assertTrue(command.text.isEmpty())
+            assertTrue(rawOpts.text.isEmpty())
+            assertTrue(workDir.text.isEmpty())
         }
     }
 }
