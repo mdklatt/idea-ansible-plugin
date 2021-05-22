@@ -3,60 +3,49 @@
  */
 package software.mdklatt.idea.ansible.test.run
 
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import com.intellij.openapi.util.JDOMExternalizerUtil
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.util.getOrCreate
 import org.jdom.Element
-import org.junit.jupiter.api.Test
-import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
-import software.mdklatt.idea.ansible.run.GalaxyConfigurationFactory
-import software.mdklatt.idea.ansible.run.GalaxySettings
+import software.mdklatt.idea.ansible.run.*
 
 
-/**
- * Unit tests for the GalaxyConfigurationFactory class.
- */
-class GalaxyConfigurationFactoryTest {
-
-    private val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
-
-    /**
-     * Test the id property.
-     */
-    @Test
-    fun testId() {
-        assertTrue(factory.id.isNotBlank())
-    }
-
-    /**
-     * Test the name property.
-     */
-    @Test
-    fun testName() {
-        assertTrue(factory.name.isNotBlank())
-    }
-}
+// The IDEA platform tests use JUnit3, so method names are used to determine
+// behavior instead of annotations. Notably, test classes are *not* constructed
+// before each test, so setUp() methods should be used for initialization.
+// Also, test functions must be named `testXXX` or they will not be found
+// during automatic discovery.
 
 
 /**
  * Unit tests for the GalaxyRunSettings class.
  */
-class GalaxySettingsTest {
+class GalaxySettingsTest : BasePlatformTestCase() {
 
-    private var settings = GalaxySettings().apply {
-        requirements = "reqs.yml"
-        rolesDir = "roles/"
-        deps = false
-        force = true
-        command = "ansbile-command"
-        rawOpts = "one \"two\""
-        workDir = "abc/"
+    private lateinit var element: Element
+    private lateinit var settings: GalaxySettings
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        element = Element("configuration")
+        settings = GalaxySettings().apply {
+            requirements = "requirements.yml"
+            deps = false
+            force = true
+            rolesDir = "roles"
+            command = "/path/to/ansible-galaxy"
+            rawOpts = "one \"two\""
+            workDir = "/path/to/project"
+        }
     }
 
     /**
-     * Test the primary constructor.
+     * Test the constructor.
      */
-    @Test
-    fun testCtor() {
+    fun testConstructor() {
         GalaxySettings().apply {
             assertEquals("", requirements)
             assertEquals(true, deps)
@@ -68,34 +57,133 @@ class GalaxySettingsTest {
     }
 
     /**
-     * Test round-trip write/read with a JDOM Element.
+     * Test round-trip write/read of settings.
      */
-    @Test
     fun testPersistence() {
-        val element = Element("configuration")
         settings.save(element)
-        val newSettings = GalaxySettings()
-        newSettings.load(element)
-        newSettings.apply {
-            assertEquals(requirements, settings.requirements)
-            assertEquals(rolesDir, settings.rolesDir)
-            assertEquals(deps, settings.deps)
-            assertEquals(force, settings.force)
-            assertEquals(command, settings.command)
-            assertEquals(rawOpts, settings.rawOpts)
+        element.getOrCreate("ansible-galaxy").let {
+            assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
+        }
+        GalaxySettings().apply {
+            load(element)
+            assertEquals("requirements.yml", requirements)
+            assertEquals("roles", rolesDir)
+            assertEquals(false, deps)
+            assertEquals(true, force)
+            assertEquals("/path/to/ansible-galaxy", command)
+            assertEquals("one \"two\"", rawOpts)
+            assertEquals("/path/to/project", workDir)
         }
     }
 
     /**
-     * Test the command attribute.
+     * Test the `command` attribute default value.
      */
-    @Test
-    fun testCommand() {
-        GalaxySettings().apply {
+    fun testCommandDefault() {
+        settings.apply {
             command = ""
             assertEquals("ansible-galaxy", command)
-            command = "abc"
-            assertEquals("abc", command)
+        }
+    }
+}
+
+
+/**
+ * Unit tests for the GalaxyConfigurationFactory class.
+ */
+class GalaxyConfigurationFactoryTest : BasePlatformTestCase() {
+
+    private lateinit var factory: GalaxyConfigurationFactory
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
+    }
+
+    /**
+     * Test the `id` property.
+     */
+    fun testId() {
+        assertTrue(factory.id.isNotBlank())
+    }
+
+    /**
+     * Test the `name` property.
+     */
+    fun testName() {
+        assertTrue(factory.name.isNotBlank())
+    }
+}
+
+
+/**
+ * Unit tests for the GalaxyRunConfiguration class.
+ */
+class GalaxyRunConfigurationTest : BasePlatformTestCase() {
+
+    private lateinit var element: Element
+    private lateinit var config: GalaxyRunConfiguration
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        element = Element("configuration")
+        element.getOrCreate("ansible-galaxy").let {
+            JDOMExternalizerUtil.writeField(it, "rolesDir", "roles")
+            JDOMExternalizerUtil.writeField(it, "force", "true")
+        }
+        val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
+        config = GalaxyRunConfiguration(project, factory, "Ansible Galaxy Test")
+    }
+
+    fun testConstructor() {
+        assertEquals("Ansible Galaxy Test", config.name)
+    }
+
+    /**
+     * Test the readExternal() method.
+     */
+    fun testReadExternal() {
+        config.apply {
+            readExternal(element)
+            assertEquals("roles", settings.rolesDir)
+            assertEquals(true, settings.force)
+        }
+    }
+
+    /**
+     * Test the writeExternal() method.
+     */
+    fun testWriteExternal() {
+        config.writeExternal(element)
+        element.getOrCreate("ansible-galaxy").let {
+            assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
+        }
+    }
+}
+
+
+/**
+ * Unit tests for the GalaxySettingsEditor class.
+ */
+class GalaxySettingsEditorTest : BasePlatformTestCase() {
+    /**
+     * Test the constructor.
+     */
+    fun testConstructor() {
+        GalaxySettingsEditor(project).apply {
+            assertTrue(requirements.text.isEmpty())
+            assertTrue(rolesDir.text.isEmpty())
+            assertFalse(deps.isSelected)
+            assertFalse(force.isSelected)
+            assertTrue(command.text.isEmpty())
+            assertTrue(rawOpts.text.isEmpty())
+            assertTrue(workDir.text.isEmpty())
         }
     }
 }
