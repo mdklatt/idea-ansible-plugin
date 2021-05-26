@@ -1,7 +1,5 @@
-## Travis CI configuration for the idea-ansible-plugin project template.
-##
-##   <https://travis-ci.org/mdklatt/idea-ansible-plugin>
-##
+# <https://travis-ci.com/mdklatt/idea-ansible-plugin>
+
 language: java
 
 jdk:
