@@ -1,11 +1,7 @@
 <idea-plugin>
-    <id>idea-ansible</id>
+    <id>software.mdklatt.idea.ansible</id>
     <name>Ansible</name>
     <vendor email="mdklatt@alumni.ou.edu" url="https://github.com/mdklatt/idea-ansible-plugin">Michael Klatt</vendor>
-
-    <description><![CDATA[
-    IDEA plugin for running <a href="https://docs.ansible.com/ansible/latest/index.html">Ansible</a> commands.
-    ]]></description>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
