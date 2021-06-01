@@ -335,9 +335,11 @@ class PlaybookSettings internal constructor(): AnsibleSettings() {
             tags = JDOMExternalizerUtil.readField(it, "tags", "").split(delimit)
             variables = JDOMExternalizerUtil.readField(it, "variables", "").split(delimit)
         }
-        // TODO: Refactor tp separate function.
+        // TODO: Refactor to separate function.
+        // TODO: this::class.java.getPackage().name
         val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
         val credentialAttributes = CredentialAttributes(service)
+        logger.debug("getting password from keychain for $service")
         sudoPass = PasswordSafe.instance.getPassword(credentialAttributes)?.toCharArray() ?: charArrayOf()
         return
     }
@@ -358,10 +360,17 @@ class PlaybookSettings internal constructor(): AnsibleSettings() {
             JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(delimit))
         }
 
-        // TODO: Refactor tp separate function.
+        // TODO: Refactor to separate function.
+        // TODO: this::class.java.getPackage().name
         val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
         val credentialAttributes = CredentialAttributes(service)
-        val credentials = if (sudoPass.isNotEmpty()) Credentials(null, sudoPass) else null  // delete credentials if no password is defined
+        val credentials = if (sudoPass.isNotEmpty()) Credentials(null, sudoPass) else null
+        if (credentials != null) {
+            logger.debug("saving password to keychain for $service")
+        }
+        else {
+            logger.debug("removing password from keychain for $service")
+        }
         PasswordSafe.instance.set(credentialAttributes, credentials)
         return
     }
