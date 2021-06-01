@@ -23,7 +23,6 @@ import com.intellij.ui.layout.panel
 import com.intellij.util.getOrCreate
 import org.jdom.Element
 import java.awt.event.ItemEvent
-import java.util.*
 import javax.swing.JComponent
 import javax.swing.JPasswordField
 import javax.swing.JTextField
@@ -195,9 +194,9 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             playbooks.text = if (settings.playbooks.isNotEmpty()) settings.playbooks[0] else ""
             inventory.text = if (settings.inventory.isNotEmpty()) settings.inventory[0] else ""
             host.text = settings.host
-            passwordPrompt.isSelected = settings.passwordPrompt
+            passwordPrompt.isSelected = settings.sudoPrompt
             if (!passwordPrompt.isSelected) {
-                password.text = settings.password.joinToString("")
+                password.text = settings.sudoPass.joinToString("")
             }
             tags.text = settings.tags.joinToString(" ")
             variables.text = settings.variables.joinToString(" ")
@@ -227,9 +226,9 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
             settings.playbooks = listOf(playbooks.text)
             settings.inventory = listOf(inventory.text)
             settings.host = host.text
-            settings.passwordPrompt = passwordPrompt.isSelected
-            if (!settings.passwordPrompt) {
-                settings.password = password.password
+            settings.sudoPrompt = passwordPrompt.isSelected
+            if (!settings.sudoPrompt) {
+                settings.sudoPass = password.password
             }
             settings.tags = tags.text.split(" ")
             settings.variables = variables.text.split(" ")
@@ -267,13 +266,13 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
             "tags" to settings.tags.joinToString(",").ifEmpty { null },
             "extra-vars" to settings.variables.joinToString(" ").ifEmpty { null }
         )
-        if (settings.passwordPrompt) {
+        if (settings.sudoPrompt) {
             val dialog = PasswordDialog("Sudo password for ${settings.host}")
-            settings.password = dialog.prompt() ?: throw RuntimeException("no password")
+            settings.sudoPass = dialog.prompt() ?: throw RuntimeException("no password")
         }
-        if (settings.password.isNotEmpty()) {
+        if (settings.sudoPass.isNotEmpty()) {
             options["ask-become-pass"] = true
-            command.withInput(settings.password.joinToString(""))
+            command.withInput(settings.sudoPass.joinToString(""))
         }
         command.addOptions(options)
         command.addParameters(PosixCommandLine.split(settings.rawOpts))
@@ -310,8 +309,8 @@ class PlaybookSettings internal constructor(): AnsibleSettings() {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
         }
     var host = ""
-    var password = charArrayOf()
-    var passwordPrompt = false
+    var sudoPass = charArrayOf()
+    var sudoPrompt = false
     var tags = emptyList<String>()
         set(value) {
             field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
@@ -332,14 +331,14 @@ class PlaybookSettings internal constructor(): AnsibleSettings() {
             playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(delimit)
             inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(delimit)
             host = JDOMExternalizerUtil.readField(it, "host", "")
-            passwordPrompt = JDOMExternalizerUtil.readField(it, "passwordPrompt", "false").toBoolean()
+            sudoPrompt = JDOMExternalizerUtil.readField(it, "sudoPrompt", "false").toBoolean()
             tags = JDOMExternalizerUtil.readField(it, "tags", "").split(delimit)
             variables = JDOMExternalizerUtil.readField(it, "variables", "").split(delimit)
         }
         // TODO: Refactor tp separate function.
         val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
         val credentialAttributes = CredentialAttributes(service)
-        password = PasswordSafe.instance.getPassword(credentialAttributes)?.toCharArray() ?: charArrayOf()
+        sudoPass = PasswordSafe.instance.getPassword(credentialAttributes)?.toCharArray() ?: charArrayOf()
         return
     }
 
@@ -354,7 +353,7 @@ class PlaybookSettings internal constructor(): AnsibleSettings() {
             JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(delimit))
             JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(delimit))
             JDOMExternalizerUtil.writeField(it, "host", host)
-            JDOMExternalizerUtil.writeField(it, "passwordPrompt", passwordPrompt.toString())
+            JDOMExternalizerUtil.writeField(it, "sudoPrompt", sudoPrompt.toString())
             JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(delimit))
             JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(delimit))
         }
@@ -362,7 +361,7 @@ class PlaybookSettings internal constructor(): AnsibleSettings() {
         // TODO: Refactor tp separate function.
         val service = generateServiceName("software.mdklatt.idea.ansible", id.toString())
         val credentialAttributes = CredentialAttributes(service)
-        val credentials = if (password.isNotEmpty()) Credentials(null, password) else null  // delete credentials if no password is defined
+        val credentials = if (sudoPass.isNotEmpty()) Credentials(null, sudoPass) else null  // delete credentials if no password is defined
         PasswordSafe.instance.set(credentialAttributes, credentials)
         return
     }

@@ -36,8 +36,8 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
             playbooks = listOf("playbook.yml")
             inventory = listOf("hosts.yml")
             host = "hostname"
-            password = charArrayOf('P', 'A', 'S', 'S')
-            passwordPrompt = false
+            sudoPass = charArrayOf('P', 'A', 'S', 'S')
+            sudoPrompt = false
             variables = listOf("key1=val1", "key2=val2")
             tags = listOf("abc", "xyz")
             command = "/path/to/ansible-playbook"
@@ -52,7 +52,7 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
     override fun tearDown() {
         settings.apply {
             // Save empty password to remove it from the keychain.
-            password = charArrayOf()
+            sudoPass = charArrayOf()
             save(element)
         }
         super.tearDown()
@@ -66,7 +66,7 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
             assertEquals(emptyList<String>(), playbooks)
             assertEquals(emptyList<String>(), inventory)
             assertEquals("", host)
-            assertFalse(passwordPrompt)
+            assertFalse(sudoPrompt)
             assertEquals(emptyList<String>(), tags)
             assertEquals(emptyList<String>(), variables)
             assertEquals("ansible-playbook", command)
@@ -88,8 +88,8 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
             assertEquals(listOf("playbook.yml"), playbooks)
             assertEquals(listOf("hosts.yml"), inventory)
             assertEquals("hostname", host)
-            assertArrayEquals(charArrayOf('P', 'A', 'S', 'S'), password)
-            assertEquals(false, passwordPrompt)
+            assertArrayEquals(charArrayOf('P', 'A', 'S', 'S'), sudoPass)
+            assertEquals(false, sudoPrompt)
             assertEquals(listOf("abc", "xyz"), tags)
             assertEquals(listOf("key1=val1", "key2=val2"), variables)
             assertEquals("/path/to/ansible-playbook", command)
@@ -157,7 +157,7 @@ class PlaybookRunConfigurationTest : BasePlatformTestCase() {
         element = Element("configuration")
         element.getOrCreate("ansible-playbook").let {
             JDOMExternalizerUtil.writeField(it, "host", "hostname")
-            JDOMExternalizerUtil.writeField(it, "passwordPrompt", "true")
+            JDOMExternalizerUtil.writeField(it, "sudoPrompt", "true")
         }
         val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
         config = PlaybookRunConfiguration(project, factory, "Ansible Playbook Test")
@@ -166,7 +166,7 @@ class PlaybookRunConfigurationTest : BasePlatformTestCase() {
     override fun tearDown() {
         config.settings.apply {
             // Save empty password to remove it from the keychain.
-            password = charArrayOf()
+            sudoPass = charArrayOf()
             save(element)
         }
         super.tearDown()
@@ -183,7 +183,7 @@ class PlaybookRunConfigurationTest : BasePlatformTestCase() {
         config.apply {
             readExternal(element)
             assertEquals("hostname", settings.host)
-            assertEquals(true, settings.passwordPrompt)
+            assertEquals(true, settings.sudoPrompt)
         }
     }
 
