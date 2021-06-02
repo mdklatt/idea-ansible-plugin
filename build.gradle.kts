@@ -32,7 +32,6 @@ repositories {
 dependencies {
     // TODO: detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
     implementation("org.apache.commons:commons-text:1.8")
-    testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
     testImplementation("org.junit.vintage:junit-vintage-engine:5.7.0")
 }
