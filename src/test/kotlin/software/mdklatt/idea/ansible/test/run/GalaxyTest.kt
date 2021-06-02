@@ -22,15 +22,14 @@ import software.mdklatt.idea.ansible.run.*
  */
 class GalaxySettingsTest : BasePlatformTestCase() {
 
-    private lateinit var element: Element
     private lateinit var settings: GalaxySettings
+    private lateinit var element: Element
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
-        element = Element("configuration")
         settings = GalaxySettings().apply {
             requirements = "requirements.yml"
             deps = false
@@ -40,6 +39,7 @@ class GalaxySettingsTest : BasePlatformTestCase() {
             rawOpts = "one \"two\""
             workDir = "/path/to/project"
         }
+        element = Element("configuration")
     }
 
     /**
@@ -61,7 +61,7 @@ class GalaxySettingsTest : BasePlatformTestCase() {
      */
     fun testPersistence() {
         settings.save(element)
-        element.getOrCreate("ansible-galaxy").let {
+        element.getOrCreate(settings.xmlTagName).let {
             assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
         }
         GalaxySettings().apply {
@@ -124,21 +124,21 @@ class GalaxyConfigurationFactoryTest : BasePlatformTestCase() {
  */
 class GalaxyRunConfigurationTest : BasePlatformTestCase() {
 
-    private lateinit var element: Element
     private lateinit var config: GalaxyRunConfiguration
+    private lateinit var element: Element
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
+        val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
+        config = GalaxyRunConfiguration(project, factory, "Ansible Galaxy Test")
         element = Element("configuration")
-        element.getOrCreate("ansible-galaxy").let {
+        element.getOrCreate(config.settings.xmlTagName).let {
             JDOMExternalizerUtil.writeField(it, "rolesDir", "roles")
             JDOMExternalizerUtil.writeField(it, "force", "true")
         }
-        val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
-        config = GalaxyRunConfiguration(project, factory, "Ansible Galaxy Test")
     }
 
     fun testConstructor() {
@@ -161,7 +161,7 @@ class GalaxyRunConfigurationTest : BasePlatformTestCase() {
      */
     fun testWriteExternal() {
         config.writeExternal(element)
-        element.getOrCreate("ansible-galaxy").let {
+        element.getOrCreate(config.settings.xmlTagName).let {
             assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
         }
     }

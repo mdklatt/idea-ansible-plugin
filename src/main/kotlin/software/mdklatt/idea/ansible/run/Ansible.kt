@@ -67,7 +67,7 @@ abstract class AnsibleSettings protected constructor() {
 
 
     protected abstract val commandName: String
-    protected abstract val xmlTagName: String
+    internal abstract val xmlTagName: String
 
     protected val logger = Logger.getInstance(this::class.java)  // runtime class resolution
     protected var id: UUID? = null

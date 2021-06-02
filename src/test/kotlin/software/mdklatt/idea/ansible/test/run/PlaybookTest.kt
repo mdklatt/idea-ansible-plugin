@@ -23,15 +23,14 @@ import software.mdklatt.idea.ansible.run.*
  */
 class PlaybookSettingsTest : BasePlatformTestCase() {
 
-    private lateinit var element: Element
     private lateinit var settings: PlaybookSettings
+    private lateinit var element: Element
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
-        element = Element("configuration")
         settings = PlaybookSettings().apply {
             playbooks = listOf("playbook.yml")
             inventory = listOf("hosts.yml")
@@ -44,6 +43,7 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
             rawOpts = "one \"two\""
             workDir = "/path/to/project"
         }
+        element = Element("configuration")
     }
 
     /**
@@ -80,7 +80,7 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
      */
     fun testPersistence() {
         settings.save(element)
-        element.getOrCreate("ansible-playbook").let {
+        element.getOrCreate(settings.xmlTagName).let {
             assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
         }
         PlaybookSettings().apply {
@@ -146,21 +146,21 @@ class PlaybookConfigurationFactoryTest : BasePlatformTestCase() {
  */
 class PlaybookRunConfigurationTest : BasePlatformTestCase() {
 
-    private lateinit var element: Element
     private lateinit var config: PlaybookRunConfiguration
+    private lateinit var element: Element
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
+        val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
+        config = PlaybookRunConfiguration(project, factory, "Ansible Playbook Test")
         element = Element("configuration")
-        element.getOrCreate("ansible-playbook").let {
+        element.getOrCreate(config.settings.xmlTagName).let {
             JDOMExternalizerUtil.writeField(it, "host", "hostname")
             JDOMExternalizerUtil.writeField(it, "sudoPrompt", "true")
         }
-        val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
-        config = PlaybookRunConfiguration(project, factory, "Ansible Playbook Test")
     }
 
     override fun tearDown() {
@@ -192,7 +192,7 @@ class PlaybookRunConfigurationTest : BasePlatformTestCase() {
      */
     fun testWriteExternal() {
         config.writeExternal(element)
-        element.getOrCreate("ansible-playbook").let {
+        element.getOrCreate(config.settings.xmlTagName).let {
             assertTrue(JDOMExternalizerUtil.readField(it, "id", "").isNotEmpty())
         }
     }
