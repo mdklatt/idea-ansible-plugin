@@ -36,7 +36,7 @@ internal class AnsibleConfigurationTypeTest {
      */
     @Test
     fun testConfigurationTypeDescription() {
-        assertTrue(type.configurationTypeDescription.isNotBlank())
+        assertTrue(type.configurationTypeDescription.isNotEmpty())
     }
 
     /**
@@ -44,7 +44,7 @@ internal class AnsibleConfigurationTypeTest {
      */
     @Test
     fun testDisplayName() {
-        assertTrue(type.displayName.isNotBlank())
+        assertTrue(type.displayName.isNotEmpty())
     }
 
     /**
