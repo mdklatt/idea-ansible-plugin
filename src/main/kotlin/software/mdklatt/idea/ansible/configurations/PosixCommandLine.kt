@@ -1,4 +1,4 @@
-package software.mdklatt.idea.ansible.run
+package software.mdklatt.idea.ansible.configurations
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.util.execution.ParametersListUtil

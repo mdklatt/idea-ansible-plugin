@@ -1,4 +1,4 @@
-package software.mdklatt.idea.ansible.run
+package software.mdklatt.idea.ansible.configurations
 
 import com.intellij.credentialStore.CredentialAttributes
 import com.intellij.credentialStore.Credentials

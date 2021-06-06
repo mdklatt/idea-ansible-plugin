@@ -1,11 +1,10 @@
 /**
  * Unit tests for the Ansible module.
  */
-package software.mdklatt.idea.ansible.run
+package software.mdklatt.idea.ansible.configurations
 
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
-import software.mdklatt.idea.ansible.run.AnsibleConfigurationType
 import kotlin.test.assertNotNull
 
 

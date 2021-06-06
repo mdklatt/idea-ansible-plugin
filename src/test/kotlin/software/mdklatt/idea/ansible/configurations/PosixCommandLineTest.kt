@@ -1,8 +1,7 @@
-package software.mdklatt.idea.ansible.run
+package software.mdklatt.idea.ansible.configurations
 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
-import software.mdklatt.idea.ansible.run.PosixCommandLine
 import kotlin.test.assertNotNull
 
 

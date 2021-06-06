@@ -1,13 +1,12 @@
 /**
  * Unit tests for the Galaxy module.
  */
-package software.mdklatt.idea.ansible.run
+package software.mdklatt.idea.ansible.configurations
 
 import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.getOrCreate
 import org.jdom.Element
-import software.mdklatt.idea.ansible.run.*
 
 
 // The IDEA platform tests use JUnit3, so method names are used to determine
