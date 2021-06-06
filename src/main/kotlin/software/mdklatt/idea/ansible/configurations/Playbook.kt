@@ -68,7 +68,7 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
 class PlaybookRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
         RunConfigurationBase<RunProfileState>(project, factory, name) {
 
-    var settings = PlaybookSettings()
+    internal var settings = PlaybookSettings()
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
@@ -88,7 +88,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment) =
-            PlaybookCommandLineState(this.settings, environment)
+        PlaybookCommandLineState(this.settings, environment)
 
     /**
      * Read settings from a JDOM element.
@@ -294,7 +294,7 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
 /**
  * Manage PlaybookRunConfiguration settings.
  */
-class PlaybookSettings internal constructor(): AnsibleSettings() {
+internal class PlaybookSettings: AnsibleSettings() {
 
     override val commandName = "ansible-playbook"
     override val xmlTagName = "ansible-playbook"

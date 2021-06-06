@@ -8,7 +8,7 @@ import kotlin.test.assertNotNull
 /**
  * Unit tests for the PosixCommandLine class.
  */
-class PosixCommandLineTest {
+internal class PosixCommandLineTest {
 
     private val aruments = listOf("pos1", "pos2")
 

@@ -58,7 +58,7 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
 class GalaxyRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
         RunConfigurationBase<RunProfileState>(project, factory, name) {
 
-    var settings = GalaxySettings()
+    internal var settings = GalaxySettings()
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
@@ -241,7 +241,7 @@ class GalaxySettingsEditor internal constructor(project: Project) : SettingsEdit
 /**
  * Manage GalaxyRunConfiguration runtime settings.
  */
-class GalaxySettings internal constructor(): AnsibleSettings() {
+internal class GalaxySettings internal constructor(): AnsibleSettings() {
 
     override val commandName = "ansible-galaxy"
     override val xmlTagName = "ansible-galaxy"

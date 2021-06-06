@@ -20,7 +20,7 @@ import org.junit.Assert.assertArrayEquals
 /**
  * Unit tests for the PlaybookRunSettings class.
  */
-class PlaybookSettingsTest : BasePlatformTestCase() {
+internal class PlaybookSettingsTest : BasePlatformTestCase() {
 
     private lateinit var settings: PlaybookSettings
     private lateinit var element: Element
@@ -112,7 +112,7 @@ class PlaybookSettingsTest : BasePlatformTestCase() {
 /**
  * Unit tests for the PlaybookConfigurationFactory class.
  */
-class PlaybookConfigurationFactoryTest : BasePlatformTestCase() {
+internal class PlaybookConfigurationFactoryTest : BasePlatformTestCase() {
 
     private lateinit var factory: PlaybookConfigurationFactory
 
@@ -143,7 +143,7 @@ class PlaybookConfigurationFactoryTest : BasePlatformTestCase() {
 /**
  * Unit tests for the PlaybookRunConfiguration class.
  */
-class PlaybookRunConfigurationTest : BasePlatformTestCase() {
+internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
 
     private lateinit var config: PlaybookRunConfiguration
     private lateinit var element: Element
@@ -201,7 +201,7 @@ class PlaybookRunConfigurationTest : BasePlatformTestCase() {
 /**
  * Unit tests for the PlaybookSettingsEditor class.
  */
-class PlaybookSettingsEditorTest : BasePlatformTestCase() {
+internal class PlaybookSettingsEditorTest : BasePlatformTestCase() {
     /**
      * Test the constructor.
      */

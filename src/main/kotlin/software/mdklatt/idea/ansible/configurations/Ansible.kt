@@ -54,17 +54,16 @@ class AnsibleConfigurationType : ConfigurationType {
      * @return the run configuration factories.
      */
     override fun getConfigurationFactories() = arrayOf(
-            GalaxyConfigurationFactory(this),
-            PlaybookConfigurationFactory(this)
-        )
+        GalaxyConfigurationFactory(this),
+        PlaybookConfigurationFactory(this)
+    )
 }
 
 
 /**
  * Manage common Ansible configuration settings.
  */
-abstract class AnsibleSettings protected constructor() {
-
+internal abstract class AnsibleSettings protected constructor() {
 
     protected abstract val commandName: String
     internal abstract val xmlTagName: String

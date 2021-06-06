@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 /**
  * Unit tests for the AnsibleConfigurationType class.
  */
-class AnsibleConfigurationTypeTest {
+internal class AnsibleConfigurationTypeTest {
 
     private var type = AnsibleConfigurationType()
 

@@ -19,7 +19,7 @@ import org.jdom.Element
 /**
  * Unit tests for the GalaxyRunSettings class.
  */
-class GalaxySettingsTest : BasePlatformTestCase() {
+internal class GalaxySettingsTest : BasePlatformTestCase() {
 
     private lateinit var settings: GalaxySettings
     private lateinit var element: Element
@@ -90,7 +90,7 @@ class GalaxySettingsTest : BasePlatformTestCase() {
 /**
  * Unit tests for the GalaxyConfigurationFactory class.
  */
-class GalaxyConfigurationFactoryTest : BasePlatformTestCase() {
+internal class GalaxyConfigurationFactoryTest : BasePlatformTestCase() {
 
     private lateinit var factory: GalaxyConfigurationFactory
 
@@ -121,7 +121,7 @@ class GalaxyConfigurationFactoryTest : BasePlatformTestCase() {
 /**
  * Unit tests for the GalaxyRunConfiguration class.
  */
-class GalaxyRunConfigurationTest : BasePlatformTestCase() {
+internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
 
     private lateinit var config: GalaxyRunConfiguration
     private lateinit var element: Element
@@ -170,7 +170,7 @@ class GalaxyRunConfigurationTest : BasePlatformTestCase() {
 /**
  * Unit tests for the GalaxySettingsEditor class.
  */
-class GalaxySettingsEditorTest : BasePlatformTestCase() {
+internal class GalaxySettingsEditorTest : BasePlatformTestCase() {
     /**
      * Test the constructor.
      */
