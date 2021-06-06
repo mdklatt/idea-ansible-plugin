@@ -21,3 +21,4 @@ cache:
 
 script:
   - ./gradlew check
+  - ./gradlew runPluginVerifier
