@@ -1,7 +1,7 @@
 /**
  * Unit tests for the Ansible module.
  */
-package software.mdklatt.idea.ansible.test.run
+package software.mdklatt.idea.ansible.run
 
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test

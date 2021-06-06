@@ -1,7 +1,7 @@
 /**
  * Unit tests for the Playbook module.
  */
-package software.mdklatt.idea.ansible.test.run
+package software.mdklatt.idea.ansible.run
 
 import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
