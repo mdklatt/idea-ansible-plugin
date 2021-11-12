@@ -1,6 +1,6 @@
 # Ansible Plugin
 
-[![Build](https://api.travis-ci.com/mdklatt/idea-ansible-plugin.svg)][travis:build]
+[![Build](https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/build.yml)
 
 <!-- Plugin description -->
 
@@ -15,5 +15,3 @@ commands to a [JetBrains][jetbrains] IDE like IntelliJ or PyCharm.
 
 <!-- Plugin description end -->
 
-
-[travis:build]: https://travis-ci.com/mdklatt/idea-ansible-plugin
