@@ -25,6 +25,7 @@ repositories {
 }
 dependencies {
     implementation("org.apache.commons:commons-text:1.8")
+    testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
     testImplementation("org.junit.vintage:junit-vintage-engine:5.9.0")
 }
@@ -34,12 +35,8 @@ dependencies {
 intellij {
     pluginName.set(properties("pluginName"))
     version.set(properties("platformVersion"))
-    type.set(properties("platformType"))
-    downloadSources.set(properties("platformDownloadSources").toBoolean())
+    downloadSources.set(true)
     updateSinceUntilBuild.set(true)
-
-    // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file.
-    plugins.set(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
 }
 
 // Configure gradle-changelog-plugin plugin.
@@ -51,13 +48,15 @@ changelog {
 
 
 tasks {
+
     wrapper {
         gradleVersion = "7.5.1"
     }
 
-    // Set the compatibility versions to 1.8
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions {
+            jvmTarget = "11"  // requride since 2020.3
+        }
     }
 
     patchPluginXml {
@@ -83,7 +82,7 @@ tasks {
     }
 
     runPluginVerifier {
-        ideVersions.set(properties("pluginVerifierIdeVersions").split(',').map(String::trim).filter(String::isNotEmpty))
+        ideVersions.set(properties("pluginVerifyVersions").split(',').map(String::trim).filter(String::isNotEmpty))
     }
 
     publishPlugin {
@@ -95,7 +94,7 @@ tasks {
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
     }
 
-    test {
-        useJUnitPlatform()
-    }
+//    test {
+//        useJUnitPlatform()
+//    }
 }
