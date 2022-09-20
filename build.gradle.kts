@@ -25,6 +25,13 @@ repositories {
 
 
 dependencies {
+    implementation("dev.mdklatt:idea-common") {
+        version {
+            // Pointing to a tag or commit is not supported yet.
+            // <https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/MutableVersionConstraint.html>
+            branch = "main"  // need v0.1.0 or equivalent
+        }
+    }
     testImplementation(kotlin("test"))
 
     // JUnit3 is required for running IDEA platform tests.

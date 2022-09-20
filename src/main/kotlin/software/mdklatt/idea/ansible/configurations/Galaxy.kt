@@ -15,6 +15,8 @@ import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.components.CheckBox
 import com.intellij.ui.layout.panel
 import com.intellij.util.getOrCreate
+import dev.mdklatt.idea.common.exec.CommandLine
+import dev.mdklatt.idea.common.exec.PosixCommandLine
 import org.jdom.Element
 import javax.swing.JComponent
 
@@ -132,7 +134,7 @@ class GalaxyCommandLineState internal constructor(private val config: GalaxyRunC
             "roles-path" to settings.rolesDir.ifEmpty { null }
         )
         command.addOptions(options)
-        command.addParameters(PosixCommandLine.split(settings.rawOpts))
+        command.addParameters(CommandLine.split(settings.rawOpts))
         if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
         }

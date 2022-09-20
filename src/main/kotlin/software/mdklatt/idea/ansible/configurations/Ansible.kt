@@ -1,15 +1,11 @@
 package software.mdklatt.idea.ansible.configurations
 
-import com.intellij.execution.configurations.ConfigurationType
 import com.intellij.execution.configurations.ConfigurationTypeBase
-import com.intellij.icons.AllIcons
-import com.intellij.internal.statistic.beans.addBoolIfDiffers
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.util.getOrCreate
 import java.util.*
-import javax.swing.Icon
 import org.jdom.Element
 
 

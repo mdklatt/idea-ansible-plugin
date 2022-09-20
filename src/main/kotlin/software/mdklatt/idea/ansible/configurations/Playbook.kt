@@ -1,8 +1,5 @@
 package software.mdklatt.idea.ansible.configurations
 
-import com.intellij.credentialStore.CredentialAttributes
-import com.intellij.credentialStore.Credentials
-import com.intellij.credentialStore.generateServiceName
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
@@ -10,18 +7,19 @@ import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.ide.passwordSafe.PasswordSafe
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.JDOMExternalizerUtil
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.components.CheckBox
 import com.intellij.ui.layout.panel
 import com.intellij.util.getOrCreate
+import dev.mdklatt.idea.common.exec.CommandLine
+import dev.mdklatt.idea.common.exec.PosixCommandLine
+import dev.mdklatt.idea.common.password.PasswordDialog
+import dev.mdklatt.idea.common.password.StoredPassword
 import org.jdom.Element
 import java.awt.event.ItemEvent
 import javax.swing.JComponent
@@ -269,14 +267,14 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
         )
         if (settings.sudoPrompt) {
             val dialog = PasswordDialog("Sudo password for ${settings.host}")
-            settings.sudoPass = dialog.prompt() ?: throw RuntimeException("no password")
+            settings.sudoPass = dialog.getPassword() ?: throw RuntimeException("no password")
         }
         if (settings.sudoPass.isNotEmpty()) {
             options["ask-become-pass"] = true
-            command.withInput(settings.sudoPass.joinToString(""))
+            command.withInput(settings.sudoPass)
         }
         command.addOptions(options)
-        command.addParameters(PosixCommandLine.split(settings.rawOpts))
+        command.addParameters(CommandLine.split(settings.rawOpts))
         command.addParameters(settings.playbooks)
         if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
@@ -336,7 +334,7 @@ internal class PlaybookSettings: AnsibleSettings() {
             tags = JDOMExternalizerUtil.readField(it, "tags", "").split(delimit)
             variables = JDOMExternalizerUtil.readField(it, "variables", "").split(delimit)
         }
-        sudoPass = StoredPassword(id.toString()).load()
+        sudoPass = StoredPassword(id.toString()).value ?: charArrayOf()
         return
     }
 
@@ -358,94 +356,11 @@ internal class PlaybookSettings: AnsibleSettings() {
 
         val storedPassword = StoredPassword(id.toString())
         if (sudoPass.isNotEmpty()) {
-            storedPassword.save(sudoPass)
+            storedPassword.value = sudoPass
         }
         else {
-            storedPassword.remove()
+            storedPassword.value = null  // remove from credential store
         }
-        return
-    }
-}
-
-
-/**
- * Modal dialog for a password prompt.
- */
-private class PasswordDialog(private val prompt: String ="Password") : DialogWrapper(false) {
-
-    private var field = JPasswordField("", 20)
-    private var value = charArrayOf()
-
-    init {
-        init()
-        title = "Password"
-    }
-
-    /**
-     * Prompt the user for the password.
-     *
-     * @return user input
-     */
-    fun prompt(): CharArray? = if (showAndGet()) value else null
-
-    /**
-     * Define dialog contents.
-     *
-     * @return: dialog contents
-     */
-    protected override fun createCenterPanel(): JComponent {
-        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
-        return panel{
-            row("${prompt}:") { field() }
-        }
-    }
-
-    /**
-     * Event handler for the OK button.
-     */
-    protected override fun doOKAction() {
-        value = field.password
-        super.doOKAction()
-    }
-}
-
-
-/**
- * Manage a password stored in the system keychain.
- */
-private class StoredPassword(id: String) {
-
-    private val logger = Logger.getInstance(this::class.java)
-    private val service = generateServiceName(this::class.java.getPackage().name, id)
-    private val credentialAttributes = CredentialAttributes(service)
-
-    /**
-     * Load password from the keychain.
-     *
-     * @return: stored password
-     */
-    fun load(): CharArray {
-        logger.debug("loading password from keychain for $service")
-        return PasswordSafe.instance.getPassword(credentialAttributes)?.toCharArray() ?: charArrayOf()
-    }
-
-    /**
-     * Save password to the keychain.
-     *
-     * @param value: password value
-     */
-    fun save(value: CharArray) {
-        logger.debug("saving password to keychain for $service")
-        PasswordSafe.instance.set(credentialAttributes, Credentials(null, value))
-        return
-    }
-
-    /**
-     * Remove password from the keychain.
-     */
-    fun remove() {
-        logger.debug("removing password from keychain for $service")
-        PasswordSafe.instance.set(credentialAttributes, null)
         return
     }
 }
