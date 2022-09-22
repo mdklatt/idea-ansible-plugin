@@ -19,11 +19,6 @@ repositories {
 }
 
 
-repositories {
-    mavenCentral()
-}
-
-
 dependencies {
     implementation("dev.mdklatt:idea-common") {
         version {
