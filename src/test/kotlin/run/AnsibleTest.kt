@@ -3,8 +3,8 @@
  */
 package dev.mdklatt.idea.ansible.run
 
-import kotlin.test.assertTrue
 import kotlin.test.Test
+import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 
 
