@@ -72,7 +72,6 @@ tasks {
 
         // Get the latest available change notes from the changelog file
         changeNotes.set(changelog.getLatest().toHTML())
-
     }
 
     runPluginVerifier {
@@ -96,6 +95,13 @@ tasks {
         // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
         // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
+    }
+
+    check {
+        // Add plugin validation tasks to default checks.
+        dependsOn(verifyPlugin)
+        dependsOn(verifyPluginConfiguration)
+        dependsOn(runPluginVerifier)
     }
 }
 
