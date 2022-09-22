@@ -10,21 +10,19 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import com.intellij.openapi.util.JDOMExternalizerUtil
-import com.intellij.ui.RawCommandLineEditor
-import com.intellij.ui.components.CheckBox
-import com.intellij.ui.layout.panel
-import com.intellij.util.getOrCreate
+import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.common.exec.CommandLine
 import dev.mdklatt.idea.common.exec.PosixCommandLine
 import dev.mdklatt.idea.common.password.PasswordDialog
 import dev.mdklatt.idea.common.password.StoredPassword
 import org.jdom.Element
 import java.awt.event.ItemEvent
+import java.io.File
+import java.util.*
 import javax.swing.JComponent
 import javax.swing.JPasswordField
-import javax.swing.JTextField
 
 
 /**
@@ -55,6 +53,32 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
      * @return: unique ID
      */
     override fun getId(): String = this::class.java.simpleName
+
+    /**
+     * Return the type of the options storage class.
+     *
+     * @return: options class type
+     */
+    override fun getOptionsClass() = PlaybookOptions::class.java
+}
+
+
+/**
+ * Handle persistence of run configuration options.
+ *
+ * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
+ */
+class PlaybookOptions : RunConfigurationOptions() {
+    internal var uid by string()
+    internal var playbooks by string()
+    internal var inventory by string()
+    internal var host by string()
+    internal var sudoPassPrompt by property(false)
+    internal var tags by string()
+    internal var variables by string()
+    internal var command by string("ansible-playbook")
+    internal var rawOpts by string()
+    internal var workDir by string()
 }
 
 
@@ -66,7 +90,72 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
 class PlaybookRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
         RunConfigurationBase<RunProfileState>(project, factory, name) {
 
-    internal var settings = PlaybookSettings()
+    private val delimit = "|"
+
+    internal var uid: String
+        get() {
+            if (options.uid == null) {
+                options.uid = UUID.randomUUID().toString()
+            }
+            return options.uid ?: throw RuntimeException("null UID")
+        }
+        set(value) {
+            options.uid = value
+        }
+    internal var playbooks: MutableList<String>
+        get() = options.playbooks?.split(File.pathSeparator)?.toMutableList() ?: mutableListOf()
+        set(value) {
+            options.playbooks = value.joinToString(File.pathSeparator)
+        }
+    internal var inventory: MutableList<String>
+        get() = options.inventory?.split(File.pathSeparator)?.toMutableList() ?: mutableListOf()
+        set(value) {
+            options.inventory = value.joinToString(File.pathSeparator)
+        }
+    internal var host: String
+        get() = options.host ?: ""
+        set(value) {
+            options.host = value
+        }
+    internal val sudoPass: StoredPassword
+        get() = StoredPassword(uid)  // need password for current UID
+    internal var sudoPassPrompt: Boolean
+        get() = options.sudoPassPrompt
+        set(value) {
+            options.sudoPassPrompt = value
+        }
+    internal var tags: List<String>
+        get() = options.tags?.split(delimit) ?: emptyList()
+        set(value) {
+            options.tags = value.joinToString(delimit)
+        }
+    internal var variables: List<String>
+        get() = options.variables?.split(delimit) ?: emptyList()
+        set(value) {
+            options.variables = value.joinToString(delimit)
+        }
+    internal var command: String
+        get() = options.command ?: ""
+        set(value) {
+            options.command = value.ifBlank { "ansible-playbook" }
+        }
+    internal var rawOpts: String
+        get() = options.rawOpts ?: ""
+        set(value) {
+            options.rawOpts = value
+        }
+    internal var workDir: String
+        get() = options.workDir ?: ""
+        set(value) {
+            options.workDir = value
+        }
+
+    /**
+     * Get the persistent options for this instance.
+     */
+    override fun getOptions(): PlaybookOptions {
+        return super.getOptions() as PlaybookOptions
+    }
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
@@ -76,7 +165,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      *
      * @return the settings editor component.
      */
-    override fun getConfigurationEditor() = PlaybookSettingsEditor(project)
+    override fun getConfigurationEditor() = PlaybookSettingsEditor()
 
     /**
      * Prepares for executing a specific instance of the run configuration.
@@ -86,32 +175,36 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment) =
-        PlaybookCommandLineState(this.settings, environment)
+        PlaybookCommandLineState(this, environment)
 
     /**
-     * Read settings from a JDOM element.
+     * Read stored settings from XML.
      *
-     * This is part of the RunConfiguration persistence API.
-     *
-     * @param element: input element.
+     * @param element XML element
      */
     override fun readExternal(element: Element) {
         super.readExternal(element)
-        settings.load(element)
-        return
+        if (options.uid == null) {
+            options.uid = UUID.randomUUID().toString()
+        }
     }
 
     /**
-     * Write settings to a JDOM element.
+     * Write stored settings to XML.
      *
-     * This is part of the RunConfiguration persistence API.
-
-     * @param element: output element.
+     * @param element XML element
      */
     override fun writeExternal(element: Element) {
+        val default = element.getAttributeValue("default")?.toBoolean() ?: false
+        if (default) {
+            // Do not save UID with configuration template.
+            options.uid = null
+        }
+        if (sudoPassPrompt) {
+            // Do not use saved password.
+            sudoPass.value = null
+        }
         super.writeExternal(element)
-        settings.save(element)
-        return
     }
 }
 
@@ -121,32 +214,18 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
  *
  * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#settings-editor">Settings Editor</a>
  */
-class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEditor<PlaybookRunConfiguration>() {
+class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRunConfiguration>() {
 
-    var playbooks = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Playbooks", "", project,
-                FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor())
-    }
-    var inventory = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Inventory", "", project,
-                FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor())
-    }
-    var host = JTextField("")
-    var password = JPasswordField("")
-    var passwordPrompt = CheckBox("Prompt for password")
-    var tags = JTextField("")
-    var variables = JTextField("")
-
-    // Common Ansible settings.
-    var command = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Ansible Command", "", project,
-                FileChooserDescriptorFactory.createSingleFileDescriptor())
-    }
-    var rawOpts = RawCommandLineEditor()
-    var workDir = TextFieldWithBrowseButton().apply {
-        addBrowseFolderListener("Working Directory", "", project,
-                FileChooserDescriptorFactory.createSingleFolderDescriptor())
-    }
+    private var playbooks = mutableListOf<String>()
+    private var inventory = mutableListOf<String>()
+    private var host = ""
+    private var sudoPass = charArrayOf()
+    private var sudoPassPrompt = false
+    private var tags = ""
+    private var variables = ""
+    private var command = ""
+    private var rawOpts = ""
+    private var workDir = ""
 
     /**
      * Create the widget for this editor.
@@ -154,32 +233,74 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
      * @return: UI widget
      */
     override fun createEditor(): JComponent {
-        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
-        passwordPrompt.addItemListener{
-            if (it.stateChange == ItemEvent.SELECTED) {
-                password.text = ""
-                password.isEditable = false
-            }
-            else {
-                password.isEditable = true
-            }
+        // Multiple file selection does not work as expected because the UI
+        // widget does not allow multiple items to be selected. The way that
+        // multiple paths are stored is unknown without a working example, but
+        // it's reasonable to assume that a pathsep-delimited string is used.
+        val getPathsFromField: (TextFieldWithBrowseButton) -> MutableList<String> = {
+            field -> field.text.split(File.pathSeparator).toMutableList()
+        }
+        val setFieldFromPaths: (TextFieldWithBrowseButton, List<String>) -> Unit = {
+            field, paths -> field.text = paths.joinToString(File.pathSeparator)
         }
         return panel{
-            row("Playbooks:") { playbooks() }
-            row("Inventory:") { inventory() }
-            row("Host:")  { host() }
-            row("Sudo password:") {
-                password()
-                passwordPrompt()
+            row("Playbooks:") {
+                // FIXME: Multiple file selection does not work.
+                textFieldWithBrowseButton("Playbooks",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor(),
+                ).bind(getPathsFromField, setFieldFromPaths, ::playbooks.toMutableProperty())
             }
-            row("Tags:") { tags() }
-            row("Extra variables:") { variables() }
-
-            // Common Ansible settings.
-            titledRow("Environment") {}
-            row("Ansible command:") { command() }
-            row("Raw options:") { rawOpts() }
-            row("Working directory:") { workDir() }
+            row("Inventories:") {
+                // FIXME: Multiple file selection does not work.
+                textFieldWithBrowseButton("Inventories",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor(),
+                ).bind(getPathsFromField, setFieldFromPaths, ::inventory.toMutableProperty())
+            }
+            row("Host specification:")  {
+                textField().bindText(::host)
+            }
+            row("Host sudo password:") {
+                val password = JPasswordField("", 20)
+                cell(password).applyIfEnabled().bind(
+                    JPasswordField::getPassword,
+                    { field, value -> field.text = value.joinToString("") },
+                    ::sudoPass.toMutableProperty()
+                )
+                checkBox("Prompt for password").let {
+                    it.bindSelected(::sudoPassPrompt)
+                    it.component.addItemListener{ event ->
+                        // Selecting this checkbox disables the password field,
+                        // and the user will instead be prompted for a password
+                        // at runtime.
+                        if (event.stateChange == ItemEvent.SELECTED) {
+                            password.text = ""
+                            password.isEnabled = false
+                        }
+                        else {
+                            password.isEnabled = true
+                        }
+                    }
+                }
+            }
+            row("Tags:")  {
+                textField().bindText(::tags)
+            }
+            row("Extra variables:")  {
+                textField().bindText(::variables)
+            }
+            group("Environment") {
+                row("Ansible command:") {
+                    textFieldWithBrowseButton("Ansible Command").bindText(::command)
+                }
+                row("Raw options:") {
+                    expandableTextField().bindText(::rawOpts)
+                }
+                row("Working directory:") {
+                    textFieldWithBrowseButton("Working Directory",
+                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                    ).bindText(::workDir)
+                }
+            }
         }
     }
 
@@ -189,21 +310,21 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
      * @param config: run configuration
      */
     override fun resetEditorFrom(config: PlaybookRunConfiguration) {
-        config.apply {
-            playbooks.text = if (settings.playbooks.isNotEmpty()) settings.playbooks[0] else ""
-            inventory.text = if (settings.inventory.isNotEmpty()) settings.inventory[0] else ""
-            host.text = settings.host
-            passwordPrompt.isSelected = settings.sudoPrompt
-            if (!passwordPrompt.isSelected) {
-                password.text = settings.sudoPass.joinToString("")
-            }
-            tags.text = settings.tags.joinToString(" ")
-            variables.text = settings.variables.joinToString(" ")
-            command.text = settings.command
-            rawOpts.text = settings.rawOpts
-            workDir.text = settings.workDir
+        // Update bound properties from config value then reset UI.
+        config.let {
+            // TODO: Handle multiple files for playbooks and inventory.
+            playbooks = it.playbooks
+            inventory = it.inventory
+            host = it.host
+            sudoPass = it.sudoPass.value ?: charArrayOf()
+            sudoPassPrompt = it.sudoPassPrompt
+            tags = it.tags.joinToString(" ")
+            variables = it.variables.joinToString(" ")
+            command = it.command
+            rawOpts = it.rawOpts
+            workDir = it.workDir
         }
-        return
+        (this.component as DialogPanel).reset()
     }
 
     /**
@@ -212,30 +333,20 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
      * @param config: run configuration
      */
     override fun applyEditorTo(config: PlaybookRunConfiguration) {
-        // This apparently gets called for every key press, so performance is
-        // critical.
-        // TODO: Get file list for playbooks and inventory.
-        config.apply {
-            // If a new PlaybookRunSettings object isn't created, multiple
-            // configurations seem to share the same settings, i.e. the values
-            // for one configuration will be copied to multiple configurations
-            // on save. This is not apparent until the project is reloaded.
-            // TODO: Why does this happen?
-            settings = PlaybookSettings()  // prevent cross contamination
-            settings.playbooks = listOf(playbooks.text)
-            settings.inventory = listOf(inventory.text)
-            settings.host = host.text
-            settings.sudoPrompt = passwordPrompt.isSelected
-            if (!settings.sudoPrompt) {
-                settings.sudoPass = password.password
-            }
-            settings.tags = tags.text.split(" ")
-            settings.variables = variables.text.split(" ")
-
-            // Common Ansible settings.
-            settings.command = command.text
-            settings.rawOpts = rawOpts.text
-            settings.workDir = workDir.text
+        // Apply UI to bound properties then update config values.
+        (this.component as DialogPanel).apply()
+        config.let {
+            // TODO: Handle multiple files for playbooks and inventory.
+            it.playbooks = playbooks
+            it.inventory = inventory
+            it.host = host
+            it.sudoPass.value = sudoPass
+            it.sudoPassPrompt = sudoPassPrompt
+            it.tags = tags.split(" ")
+            it.variables = variables.split(" ")
+            it.command = command
+            it.rawOpts = rawOpts
+            it.workDir = workDir
         }
         return
     }
@@ -243,9 +354,13 @@ class PlaybookSettingsEditor internal constructor(project: Project) : SettingsEd
 
 
 /**
- * TODO
+ * Command line process for executing the run configuration.
+ *
+ * @param config: run configuration
+ * @param environment: execution environment
+ * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-run-configuration">Run Configurations Tutorial</a>
  */
-class PlaybookCommandLineState internal constructor(private val settings: PlaybookSettings, environment: ExecutionEnvironment) :
+class PlaybookCommandLineState internal constructor(private val config: PlaybookRunConfiguration, environment: ExecutionEnvironment) :
         CommandLineState(environment) {
 
     /**
@@ -258,109 +373,36 @@ class PlaybookCommandLineState internal constructor(private val settings: Playbo
      * @see com.intellij.execution.process.OSProcessHandler
      */
     override fun startProcess(): ProcessHandler {
-        val command = PosixCommandLine(settings.command)
+        val command = PosixCommandLine(config.command)
         val options = mutableMapOf<String, Any?>(
-            "limit" to settings.host.ifEmpty { null },
-            "inventory" to settings.inventory.joinToString(",").ifEmpty { null },
-            "tags" to settings.tags.joinToString(",").ifEmpty { null },
-            "extra-vars" to settings.variables.joinToString(" ").ifEmpty { null }
+            "limit" to config.host.ifEmpty { null },
+            "inventory" to config.inventory.joinToString(",").ifEmpty { null },
+            "tags" to config.tags.joinToString(",").ifEmpty { null },
+            "extra-vars" to config.variables.joinToString(" ").ifEmpty { null }
         )
-        if (settings.sudoPrompt) {
-            val dialog = PasswordDialog("Sudo password for ${settings.host}")
-            settings.sudoPass = dialog.getPassword() ?: throw RuntimeException("no password")
+        val password = if (config.sudoPassPrompt) {
+            // Prompt user for password.
+            val dialog = PasswordDialog("Host Password", "Password for host")
+            dialog.getPassword() ?: throw RuntimeException("no password")
+        } else {
+            // Check for stored password.
+            config.sudoPass.value ?: charArrayOf()
         }
-        if (settings.sudoPass.isNotEmpty()) {
+        if (password.isNotEmpty()) {
             options["ask-become-pass"] = true
-            command.withInput(settings.sudoPass)
+            command.withInput(password)
         }
         command.addOptions(options)
-        command.addParameters(CommandLine.split(settings.rawOpts))
-        command.addParameters(settings.playbooks)
+        command.addParameters(CommandLine.split(config.rawOpts))
+        command.addParameters(config.playbooks)
         if (!command.environment.contains("TERM")) {
             command.environment["TERM"] = "xterm-256color"
         }
-        if (settings.workDir.isNotBlank()) {
-            command.withWorkDirectory(settings.workDir)
+        if (config.workDir.isNotBlank()) {
+            command.withWorkDirectory(config.workDir)
         }
         val process = KillableColoredProcessHandler(command)
         ProcessTerminatedListener.attach(process, environment.project)
         return process
-    }
-}
-
-
-/**
- * Manage PlaybookRunConfiguration settings.
- */
-internal class PlaybookSettings: AnsibleSettings() {
-
-    override val commandName = "ansible-playbook"
-    override val xmlTagName = "ansible-playbook"
-
-    private val delimit =  "|"
-
-    var playbooks = emptyList<String>()
-        set(value) {
-            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
-        }
-    var inventory = emptyList<String>()
-        set(value) {
-            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
-        }
-    var host = ""
-    var sudoPass = charArrayOf()
-    var sudoPrompt = false
-    var tags = emptyList<String>()
-        set(value) {
-            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
-        }
-    var variables = emptyList<String>()
-        set(value) {
-            field = if (value.size == 1 && value[0].isBlank()) emptyList() else value
-        }
-
-    /**
-     * Load stored settings.
-     *
-     * @param element:
-     */
-    internal override fun load(element: Element) {
-        super.load(element)
-        element.getOrCreate(xmlTagName).let {
-            playbooks = JDOMExternalizerUtil.readField(it, "playbooks", "").split(delimit)
-            inventory = JDOMExternalizerUtil.readField(it, "inventory", "").split(delimit)
-            host = JDOMExternalizerUtil.readField(it, "host", "")
-            sudoPrompt = JDOMExternalizerUtil.readField(it, "sudoPrompt", "false").toBoolean()
-            tags = JDOMExternalizerUtil.readField(it, "tags", "").split(delimit)
-            variables = JDOMExternalizerUtil.readField(it, "variables", "").split(delimit)
-        }
-        sudoPass = StoredPassword(id.toString()).value ?: charArrayOf()
-        return
-    }
-
-    /**
-     * Save settings.
-     *
-     * @param element: JDOM element
-     */
-    internal override fun save(element: Element) {
-        super.save(element)
-        element.getOrCreate(xmlTagName).let {
-            JDOMExternalizerUtil.writeField(it, "playbooks", playbooks.joinToString(delimit))
-            JDOMExternalizerUtil.writeField(it, "inventory", inventory.joinToString(delimit))
-            JDOMExternalizerUtil.writeField(it, "host", host)
-            JDOMExternalizerUtil.writeField(it, "sudoPrompt", sudoPrompt.toString())
-            JDOMExternalizerUtil.writeField(it, "tags", tags.joinToString(delimit))
-            JDOMExternalizerUtil.writeField(it, "variables", variables.joinToString(delimit))
-        }
-
-        val storedPassword = StoredPassword(id.toString())
-        if (sudoPass.isNotEmpty()) {
-            storedPassword.value = sudoPass
-        }
-        else {
-            storedPassword.value = null  // remove from credential store
-        }
-        return
     }
 }
