@@ -13,8 +13,7 @@ class AnsibleConfigurationType : ConfigurationTypeBase(
     "AnsibleConfigurationType",
     "Ansible",
     "Run Ansible commands",
-    // TODO: Deprecated method com.intellij.openapi.util.IconLoader.findIcon()
-    IconLoader.findIcon("/icons/ansibleMango.svg")  // relative to resources/
+    IconLoader.getIcon("/icons/ansibleMango.svg", AnsibleConfigurationType::class.java)
 ) {
     init {
         addFactory(GalaxyConfigurationFactory(this))
