@@ -1,6 +1,6 @@
 # Ansible Plugin
 
-[![Build](https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/build.yml)
+[![Test](https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/test.yml)
 
 <!-- Plugin description -->
 
