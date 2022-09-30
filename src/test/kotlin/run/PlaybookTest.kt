@@ -3,6 +3,10 @@
  */
 package dev.mdklatt.idea.ansible.run
 
+import com.intellij.execution.*
+import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.jdom.Element
 import kotlin.test.assertContentEquals
@@ -180,5 +184,40 @@ internal class PlaybookSettingsEditorTest : BasePlatformTestCase() {
     fun testConstructor() {
         // Just a smoke test.
         assertNotNull(editor.component)
+    }
+}
+
+
+/**
+ * Unit tests for the PlaybookCommandLineState class.
+ */
+internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
+
+    private lateinit var runConfig: RunnerAndConfigurationSettings
+    private lateinit var config: PlaybookRunConfiguration
+
+    override fun setUp() {
+        super.setUp()
+        val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
+        runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
+        config = (runConfig.configuration as PlaybookRunConfiguration).also {
+            it.playbooks = mutableListOf("src/test/resources/ansible/playbook.yml")
+            it.inventory = mutableListOf("src/test/resources/ansible/hosts.yml")
+        }
+    }
+
+    /**
+     * Test the createProcess() method.
+     */
+    fun testCreateProcess() {
+        // Indirectly test createProcess() by executing the configuration.
+        val executor = DefaultRunExecutor.getRunExecutorInstance()
+        val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
+        val state = PlaybookCommandLineState(config, environment)
+        state.execute(executor, environment.runner).processHandler.let {
+            it.startNotify()
+            it.waitFor()
+            assertEquals(0, it.exitCode)
+        }
     }
 }
