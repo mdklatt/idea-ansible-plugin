@@ -175,7 +175,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment) =
-        PlaybookCommandLineState(this, environment)
+        PlaybookCommandLineState(environment)
 
     /**
      * Read stored settings from XML.
@@ -356,53 +356,53 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
 /**
  * Command line process for executing the run configuration.
  *
- * @param config: run configuration
  * @param environment: execution environment
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-run-configuration">Run Configurations Tutorial</a>
  */
-class PlaybookCommandLineState internal constructor(private val config: PlaybookRunConfiguration, environment: ExecutionEnvironment) :
-        CommandLineState(environment) {
+class PlaybookCommandLineState internal constructor(environment: ExecutionEnvironment) :
+        AnsibleCommandLineState(environment) {
+
+    private val config = environment.runnerAndConfigurationSettings?.configuration as PlaybookRunConfiguration
 
     /**
-     * Start the process.
+     * Get command to execute.
      *
-     * @return the handler for the running process
-     * @throws ExecutionException if the execution failed.
-     * @see GeneralCommandLine
-     *
-     * @see com.intellij.execution.process.OSProcessHandler
+     * @return ansible-playbook command
      */
-    override fun startProcess(): ProcessHandler {
-        val command = PosixCommandLine(config.command)
+    override fun getCommand(): PosixCommandLine {
         val options = mutableMapOf<String, Any?>(
             "limit" to config.host.ifEmpty { null },
             "inventory" to config.inventory.joinToString(",").ifEmpty { null },
             "tags" to config.tags.joinToString(",").ifEmpty { null },
-            "extra-vars" to config.variables.joinToString(" ").ifEmpty { null }
+            "extra-vars" to config.variables.joinToString(" ").ifEmpty { null },
         )
-        val password = if (config.sudoPassPrompt) {
+        return PosixCommandLine(config.command).also {
+            getPassword()?.let { password ->
+                it.withInput(password)
+                options["ask-become-pass"] = true
+            }
+            it.addOptions(options)
+            it.addParameters(CommandLine.split(config.rawOpts))
+            it.addParameters(config.playbooks)
+            if (config.workDir.isNotBlank()) {
+                it.withWorkDirectory(config.workDir)
+            }
+        }
+    }
+
+    /**
+     * Get host password.
+     *
+     * @return password or null if not applicable
+     */
+    private fun getPassword(): CharArray? {
+        return if (config.sudoPassPrompt) {
             // Prompt user for password.
             val dialog = PasswordDialog("Host Password", "Password for host")
             dialog.getPassword() ?: throw RuntimeException("no password")
         } else {
             // Check for stored password.
-            config.sudoPass.value ?: charArrayOf()
+            config.sudoPass.value
         }
-        if (password.isNotEmpty()) {
-            options["ask-become-pass"] = true
-            command.withInput(password)
-        }
-        command.addOptions(options)
-        command.addParameters(CommandLine.split(config.rawOpts))
-        command.addParameters(config.playbooks)
-        if (!command.environment.contains("TERM")) {
-            command.environment["TERM"] = "xterm-256color"
-        }
-        if (config.workDir.isNotBlank()) {
-            command.withWorkDirectory(config.workDir)
-        }
-        val process = KillableColoredProcessHandler(command)
-        ProcessTerminatedListener.attach(process, environment.project)
-        return process
     }
 }

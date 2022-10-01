@@ -5,7 +5,6 @@ package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.*
 import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.jdom.Element
@@ -78,6 +77,9 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
         config = PlaybookRunConfiguration(project, factory, "Ansible Playbook Test")
     }
 
+    /**
+     * Per-test cleanup.
+     */
     override fun tearDown() {
         config.sudoPass.value = null  // remove from credential store
         super.tearDown()
@@ -196,6 +198,9 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
     private lateinit var runConfig: RunnerAndConfigurationSettings
     private lateinit var config: PlaybookRunConfiguration
 
+    /**
+     * Per-test initialization.
+     */
     override fun setUp() {
         super.setUp()
         val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
@@ -213,7 +218,7 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
         // Indirectly test createProcess() by executing the configuration.
         val executor = DefaultRunExecutor.getRunExecutorInstance()
         val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
-        val state = PlaybookCommandLineState(config, environment)
+        val state = PlaybookCommandLineState(environment)
         state.execute(executor, environment.runner).processHandler.let {
             it.startNotify()
             it.waitFor()
