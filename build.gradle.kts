@@ -4,7 +4,48 @@ import org.jetbrains.changelog.date
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+
 fun properties(key: String) = project.findProperty(key).toString()
+
+
+/**
+ * Task to create a Python virtualenv.
+ */
+open class PythonVenvTask: Exec() {
+
+    private val venvPath = project.findProperty("venvPath").toString()
+    private val systemPython = project.findProperty("systemPython").toString()
+
+    @Input
+    val argv = listOf(systemPython, "-m", "venv", venvPath)
+
+    @OutputFile
+    val venvPython = "${venvPath}/bin/python"
+
+    init {
+        commandLine = argv
+    }
+}
+
+
+/**
+ * Task to install Ansible in a virtualenv.
+ */
+open class AnsibleTask: Exec() {
+
+    private val venvPath = project.findProperty("venvPath").toString()
+    private val ansibleVersion = project.findProperty("ansibleVersion").toString()
+
+    @Input
+    val argv = listOf("${venvPath}/bin/python", "-m", "pip", "install", "ansible==${ansibleVersion}")
+
+    @OutputFile
+    val venvPython = "${venvPath}/bin/ansible"
+
+    init {
+        commandLine = argv
+    }
+}
 
 
 plugins {
@@ -36,6 +77,12 @@ dependencies {
 
 
 tasks {
+
+    task<PythonVenvTask>("pythonVenv")
+
+    task<AnsibleTask>("ansible") {
+        dependsOn("pythonVenv")
+    }
 
     wrapper {
         gradleVersion = "7.5.1"
@@ -90,6 +137,10 @@ tasks {
         // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
         // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
+    }
+
+    test {
+        dependsOn("ansible")
     }
 
     check {

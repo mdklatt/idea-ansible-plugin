@@ -206,6 +206,7 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
         val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
         runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
         config = (runConfig.configuration as PlaybookRunConfiguration).also {
+            it.command = ".venv/bin/ansible-playbook"
             it.playbooks = mutableListOf("src/test/resources/ansible/playbook.yml")
             it.inventory = mutableListOf("src/test/resources/ansible/hosts.yml")
         }

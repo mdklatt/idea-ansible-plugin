@@ -8,6 +8,12 @@ build/
 .gradle
 
 
+# Ignore Python environements.
+
+.python-version
+.venv*/
+
+
 # Ignore settings for various IDEs.
 
 .idea/
