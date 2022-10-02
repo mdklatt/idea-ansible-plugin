@@ -59,5 +59,5 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      *
      * @return command
      */
-    protected abstract fun getCommand(): PosixCommandLine
+    internal abstract fun getCommand(): PosixCommandLine
 }

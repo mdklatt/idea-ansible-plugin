@@ -195,8 +195,10 @@ internal class PlaybookSettingsEditorTest : BasePlatformTestCase() {
  */
 internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
 
-    private lateinit var runConfig: RunnerAndConfigurationSettings
-    private lateinit var config: PlaybookRunConfiguration
+    private val ansible = ".venv/bin/ansible-playbook"
+    private val inventory = getTestPath("/ansible/hosts.yml")
+    private var playbook = getTestPath("/ansible/playbook.yml")
+    private lateinit var state: PlaybookCommandLineState
 
     /**
      * Per-test initialization.
@@ -204,12 +206,23 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
-        runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
-        config = (runConfig.configuration as PlaybookRunConfiguration).also {
-            it.command = ".venv/bin/ansible-playbook"
-            it.playbooks = mutableListOf("src/test/resources/ansible/playbook.yml")
-            it.inventory = mutableListOf("src/test/resources/ansible/hosts.yml")
+        val runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
+        (runConfig.configuration as PlaybookRunConfiguration).also {
+            it.command = ansible
+            it.inventory = mutableListOf(inventory)
+            it.playbooks = mutableListOf(playbook)
         }
+        val executor = DefaultRunExecutor.getRunExecutorInstance()
+        val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
+        state = PlaybookCommandLineState(environment)
+    }
+
+    /**
+     * Test the getCommand() method.
+     */
+    fun testGetCommand() {
+        val command = "$ansible --inventory $inventory $playbook"
+        assertEquals(command, state.getCommand().commandLineString)
     }
 
     /**
@@ -217,13 +230,21 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
      */
     fun testCreateProcess() {
         // Indirectly test createProcess() by executing the configuration.
-        val executor = DefaultRunExecutor.getRunExecutorInstance()
-        val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
-        val state = PlaybookCommandLineState(environment)
-        state.execute(executor, environment.runner).processHandler.let {
+        val env = state.environment
+        state.execute(env.executor, env.runner).processHandler.let {
             it.startNotify()
             it.waitFor()
             assertEquals(0, it.exitCode)
         }
+    }
+
+    companion object {
+        /**
+         * Get the path to a test resource file.
+         *
+         * @param file: file path relative to the resources directory
+         * @return absolute file path
+         */
+        private fun getTestPath(file: String) = this::class.java.getResource(file)?.path ?: ""
     }
 }
