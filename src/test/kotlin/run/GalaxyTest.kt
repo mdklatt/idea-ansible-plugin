@@ -3,7 +3,13 @@
  */
 package dev.mdklatt.idea.ansible.run
 
+import com.intellij.execution.RunManager
+import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.util.io.delete
+import java.nio.file.Path
+import kotlin.io.path.createTempDirectory
 import org.jdom.Element
 
 
@@ -122,7 +128,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
     fun testCommandDefault() {
         config.let {
             it.command = ""
-            assertEquals("ansible-playbook", it.command)
+            assertEquals("ansible-galaxy", it.command)
         }
     }
 }
@@ -151,5 +157,74 @@ internal class GalaxySettingsEditorTest : BasePlatformTestCase() {
     fun testConstructor() {
         // Just a smoke test.
         assertNotNull(editor.component)
+    }
+}
+
+
+/**
+ * Unit tests for the GalaxyCommandLineState class.
+ */
+internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
+
+    private val ansible = ".venv/bin/ansible-galaxy"
+    private val requirements = getTestPath("/ansible/requirements.yml")
+    private lateinit var rolesDir: Path
+    private lateinit var state: GalaxyCommandLineState
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        rolesDir = createTempDirectory()
+        val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
+        val runConfig = RunManager.getInstance(project).createConfiguration("Galaxy Test", factory)
+        (runConfig.configuration as GalaxyRunConfiguration).also {
+            it.command = ansible
+            it.requirements = requirements
+            it.rolesDir = rolesDir.toString()
+        }
+        val executor = DefaultRunExecutor.getRunExecutorInstance()
+        val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
+        state = GalaxyCommandLineState(environment)
+    }
+
+    /**
+     * Per-test cleanup.
+     */
+    override fun tearDown() {
+        rolesDir.delete()
+        super.tearDown()
+    }
+    /**
+     * Test the getCommand() method.
+     */
+    fun testGetCommand() {
+        val command = "$ansible install --role-file $requirements --roles-path $rolesDir"
+        assertEquals(command, state.getCommand().commandLineString)
+    }
+
+    /**
+     * Test the createProcess() method.
+     */
+    fun testCreateProcess() {
+        // Indirectly test createProcess() by executing the configuration.
+        val env = state.environment
+        state.execute(env.executor, env.runner).processHandler.let {
+            it.startNotify()
+            it.waitFor()
+            assertEquals(0, it.exitCode)
+            assertTrue(rolesDir.resolve("mdklatt.tmpdir").toFile().isDirectory)
+        }
+    }
+
+    companion object {
+        /**
+         * Get the path to a test resource file.
+         *
+         * @param file: file path relative to the resources directory
+         * @return absolute file path
+         */
+        private fun getTestPath(file: String) = this::class.java.getResource(file)?.path ?: ""
     }
 }

@@ -2,9 +2,6 @@ package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
-import com.intellij.execution.process.KillableColoredProcessHandler
-import com.intellij.execution.process.ProcessHandler
-import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
@@ -95,7 +92,6 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
             options.uid = value
         }
 
-    // TODO: Shouldn't this be a list?
     internal var requirements: String
         get() = options.requirements ?: ""
         set(value) {
@@ -119,7 +115,7 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
     internal var command: String
         get() = options.command ?: ""
         set(value) {
-            options.command = value.ifBlank { "ansible-playbook" }
+            options.command = value.ifBlank { "ansible-galaxy" }
         }
     internal var rawOpts: String
         get() = options.rawOpts ?: ""
@@ -183,7 +179,7 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
      * @return the RunProfileState describing the process which is about to be started, or null if it's impossible to start the process.
      */
     override fun getState(executor: Executor, environment: ExecutionEnvironment) =
-            GalaxyCommandLineState(this, environment)
+            GalaxyCommandLineState(environment)
 
 }
 
@@ -191,39 +187,32 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
 /**
  * Command line process for executing the run configuration.
  *
- * @param config: run configuration
  * @param environment: execution environment
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-run-configuration">Run Configurations Tutorial</a>
  */
-class GalaxyCommandLineState internal constructor(private val config: GalaxyRunConfiguration, environment: ExecutionEnvironment) :
-        CommandLineState(environment) {
+class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironment) :
+        AnsibleCommandLineState(environment) {
+
+    private val config = environment.runnerAndConfigurationSettings?.configuration as GalaxyRunConfiguration
+
     /**
-     * Starts the process.
+     * Get command to execute.
      *
-     * @return the handler for the running process
-     * @throws ExecutionException if the execution failed.
-     * @see GeneralCommandLine
-     *
-     * @see com.intellij.execution.process.OSProcessHandler
+     * @return ansible-galaxy command
      */
-    override fun startProcess(): ProcessHandler {
-        val command = PosixCommandLine(config.command, listOf("install"))
+    override fun getCommand(): PosixCommandLine {
         val options = mutableMapOf(
             "no-deps" to !config.deps,
             "force" to config.force,
             "role-file" to config.requirements.ifEmpty { null },
-            "roles-path" to config.rolesDir.ifEmpty { null }
+            "roles-path" to config.rolesDir.ifEmpty { null },
         )
-        command.addOptions(options)
-        command.addParameters(CommandLine.split(config.rawOpts))
-        if (!command.environment.contains("TERM")) {
-            command.environment["TERM"] = "xterm-256color"
-        }
-        if (config.workDir.isNotBlank()) {
-            command.withWorkDirectory(config.workDir)
-        }
-        return KillableColoredProcessHandler(command).also {
-            ProcessTerminatedListener.attach(it, environment.project)
+        return PosixCommandLine(config.command, sequenceOf("install")).also {
+            it.addOptions(options)
+            it.addParameters(CommandLine.split(config.rawOpts))
+            if (config.workDir.isNotBlank()) {
+                it.withWorkDirectory(config.workDir)
+            }
         }
     }
 }
