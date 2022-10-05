@@ -87,6 +87,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             assertTrue(it.uid.isNotBlank())
             assertEquals("", it.requirements)
             assertTrue(it.deps)
+            assertEquals("", it.collectionsDir)
             assertEquals("", it.rolesDir)
             assertFalse(it.force)
             assertEquals("ansible-galaxy", it.command)
@@ -103,6 +104,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
         config.let {
             it.requirements = "requirements.yml"
             it.deps = false
+            it.collectionsDir = "collections"
             it.rolesDir = "roles"
             it.force = true
             it.command = "/path/to/ansible-galaxy"
@@ -114,6 +116,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             it.readExternal(element)
             assertEquals("requirements.yml", it.requirements)
             assertEquals(false, it.deps)
+            assertEquals("collections", it.collectionsDir)
             assertEquals("roles", it.rolesDir)
             assertEquals(true, it.force)
             assertEquals("/path/to/ansible-galaxy", it.command)
@@ -200,7 +203,9 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      * Test the getCommand() method.
      */
     fun testGetCommand() {
-        val command = "$ansible install --role-file $requirements --roles-path $rolesDir"
+        val command = "sh -c \"" +
+            "$ansible collection install -r $requirements -p $rolesDir && " +
+            "$ansible role install -r $requirements -p $rolesDir\""
         assertEquals(command, state.getCommand().commandLineString)
     }
 
@@ -215,6 +220,7 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
             it.waitFor()
             assertEquals(0, it.exitCode)
             assertTrue(rolesDir.resolve("mdklatt.tmpdir").toFile().isDirectory)
+            assertTrue(rolesDir.resolve("ansible_collections/ansible/posix").toFile().isDirectory)
         }
     }
 

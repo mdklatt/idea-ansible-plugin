@@ -63,6 +63,7 @@ class GalaxyOptions : RunConfigurationOptions() {
     internal var uid by string()
     internal var requirements by string()
     internal var deps by property(true)
+    internal var collectionsDir by string()
     internal var rolesDir by string()
     internal var force by property(false)
     internal var command by string("ansible-galaxy")
@@ -101,6 +102,11 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
         get() = options.deps
         set(value) {
             options.deps = value
+        }
+    internal var collectionsDir: String
+        get() = options.collectionsDir ?: ""
+        set(value) {
+            options.collectionsDir = value
         }
     internal var rolesDir: String
         get() = options.rolesDir ?: ""
@@ -201,14 +207,41 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
      * @return ansible-galaxy command
      */
     override fun getCommand(): PosixCommandLine {
-        val options = mutableMapOf(
+        // Per Ansible docs, if a custom install directory is used, the
+        // specific `ansible role install` and `ansible collection install`
+        // commands need to be used instead of the general `ansible install`.
+        // The preferred way to run multiple processes would be to do it
+        // programmatically, but the CommandLineState base class is designed to
+        // execute a single process. The `execute()` and/or `createProcess()`
+        // methods could be overridden to get around this, but such cleverness
+        // is definitely a code small. Instead, multiple execution is being
+        // delegated to the shell. Ansible requires WSL on Windows anyway, so
+        // this is technically OS-agnostic.
+        // TODO: Use general `ansible install` if custom paths aren't needed.
+        val compoundCommand = sequenceOf(
+            getInstallCommand("collection", config.rolesDir.ifEmpty { null }),
+            getInstallCommand("role", config.rolesDir.ifEmpty { null }),  // TODO: collection path
+        ).map { it.commandLineString }.joinToString(" && ")
+        return PosixCommandLine("sh", "-c", compoundCommand)
+    }
+
+    /**
+     * Get the appropriate command for installing collections or roles.
+     *
+     * @param type: installation type: {"collection", "roll"}
+     * @return installation command
+     */
+    private fun getInstallCommand(type: String, path: String?): PosixCommandLine {
+        // Ansible uses a POSIX-style CLI regardless of the host OS, so
+        // PosixCommandLine is okay here.
+        val forceOption = if (config.deps) "force-with-deps" else "force"
+        val commonOptions = mapOf(
             "no-deps" to !config.deps,
-            "force" to config.force,
-            "role-file" to config.requirements.ifEmpty { null },
-            "roles-path" to config.rolesDir.ifEmpty { null },
+            forceOption to config.force,
+            "r" to config.requirements.ifEmpty { null },
         )
-        return PosixCommandLine(config.command, sequenceOf("install")).also {
-            it.addOptions(options)
+        return PosixCommandLine(config.command, sequenceOf(type, "install")).also {
+            it.addOptions(commonOptions + mapOf("p" to path))
             it.addParameters(CommandLine.split(config.rawOpts))
             if (config.workDir.isNotBlank()) {
                 it.withWorkDirectory(config.workDir)
@@ -227,6 +260,7 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
 
     private var requirements = ""
     private var deps = false
+    private var collectionsDir = ""
     private var rolesDir = ""
     private var force = false
     private var command = ""
@@ -243,11 +277,18 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
         return panel {
             row("Requirements:") {
                 textFieldWithBrowseButton("Requirements File").bindText(::requirements)
+            }
+            row {
                 checkBox("Install transitive dependencies").bindSelected(::deps)
             }
+            row("Collections directory:") {
+                textFieldWithBrowseButton("Collections Directory").bindText(::collectionsDir)
+            }
             row("Roles directory:") {
-                textFieldWithBrowseButton("Requirements File").bindText(::rolesDir)
-                checkBox("Overwrite existing roles").bindSelected(::force)
+                textFieldWithBrowseButton("Roles Directory").bindText(::rolesDir)
+            }
+            row() {
+                checkBox("Overwrite existing files").bindSelected(::force)
             }
             group("Environment") {
                 row("Ansible command:") {
@@ -276,6 +317,7 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
             requirements = it.requirements
             deps = it.deps
             force = it.force
+            collectionsDir = it.collectionsDir
             rolesDir = it.rolesDir
             command = it.command
             rawOpts = it.rawOpts
@@ -296,6 +338,7 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
             it.requirements = requirements
             it.deps = deps
             it.force = force
+            it.collectionsDir = collectionsDir
             it.rolesDir = rolesDir
             it.command = command
             it.rawOpts = rawOpts

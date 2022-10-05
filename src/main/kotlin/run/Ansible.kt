@@ -9,7 +9,6 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.IconLoader
-import dev.mdklatt.idea.common.exec.PosixCommandLine
 
 
 class AnsibleConfigurationType : ConfigurationTypeBase(
@@ -59,5 +58,5 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      *
      * @return command
      */
-    internal abstract fun getCommand(): PosixCommandLine
+    internal abstract fun getCommand(): GeneralCommandLine
 }
