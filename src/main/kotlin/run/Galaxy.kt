@@ -207,7 +207,7 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
      * @return ansible-galaxy command
      */
     override fun getCommand(): PosixCommandLine {
-        // Per Ansible docs, if a custom install directory is used, the
+        // Per Ansible docs, if any custom install directory is used, the
         // specific `ansible role install` and `ansible collection install`
         // commands need to be used instead of the general `ansible install`.
         // The preferred way to run multiple processes would be to do it
@@ -218,20 +218,27 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         // delegated to the shell. Ansible requires WSL on Windows anyway, so
         // this is technically OS-agnostic.
         // TODO: Use general `ansible install` if custom paths aren't needed.
+        val rolesDir = config.rolesDir.ifEmpty { null }
+        val collectionsDir = config.collectionsDir.ifEmpty { null }
+        if (rolesDir == null && collectionsDir == null) {
+            // Use basic install command.
+            return getInstallCommand()
+        }
         val compoundCommand = sequenceOf(
-            getInstallCommand("collection", config.rolesDir.ifEmpty { null }),
-            getInstallCommand("role", config.rolesDir.ifEmpty { null }),  // TODO: collection path
+            getInstallCommand("collection", collectionsDir),
+            getInstallCommand("role", rolesDir),
         ).map { it.commandLineString }.joinToString(" && ")
         return PosixCommandLine("sh", "-c", compoundCommand)
     }
 
     /**
-     * Get the appropriate command for installing collections or roles.
+     * Get an install command.
      *
-     * @param type: installation type: {"collection", "roll"}
+     * @param type: installation type
+     * @param path: installation path
      * @return installation command
      */
-    private fun getInstallCommand(type: String, path: String?): PosixCommandLine {
+    private fun getInstallCommand(type: String? = null, path: String? = null): PosixCommandLine {
         // Ansible uses a POSIX-style CLI regardless of the host OS, so
         // PosixCommandLine is okay here.
         val forceOption = if (config.deps) "force-with-deps" else "force"
@@ -240,7 +247,8 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             forceOption to config.force,
             "r" to config.requirements.ifEmpty { null },
         )
-        return PosixCommandLine(config.command, sequenceOf(type, "install")).also {
+        val subcommand = sequenceOf(type, "install").filterNotNull()
+        return PosixCommandLine(config.command, subcommand).also {
             it.addOptions(commonOptions + mapOf("p" to path))
             it.addParameters(CommandLine.split(config.rawOpts))
             if (config.workDir.isNotBlank()) {

@@ -169,9 +169,8 @@ internal class GalaxySettingsEditorTest : BasePlatformTestCase() {
  */
 internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
 
-    private val ansible = ".venv/bin/ansible-galaxy"
-    private val requirements = getTestPath("/ansible/requirements.yml")
-    private lateinit var rolesDir: Path
+    private var tmpDir: Path? = null
+    private lateinit var configuration: GalaxyRunConfiguration
     private lateinit var state: GalaxyCommandLineState
 
     /**
@@ -179,14 +178,9 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      */
     override fun setUp() {
         super.setUp()
-        rolesDir = createTempDirectory()
         val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
         val runConfig = RunManager.getInstance(project).createConfiguration("Galaxy Test", factory)
-        (runConfig.configuration as GalaxyRunConfiguration).also {
-            it.command = ansible
-            it.requirements = requirements
-            it.rolesDir = rolesDir.toString()
-        }
+        configuration = (runConfig.configuration as GalaxyRunConfiguration)
         val executor = DefaultRunExecutor.getRunExecutorInstance()
         val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
         state = GalaxyCommandLineState(environment)
@@ -196,16 +190,34 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      * Per-test cleanup.
      */
     override fun tearDown() {
-        rolesDir.delete()
+        tmpDir?.delete()
         super.tearDown()
     }
+
     /**
-     * Test the getCommand() method.
+     * Test the getCommand() method for default install directories.
      */
-    fun testGetCommand() {
+    fun testGetCommandDefaultDirs() {
+        configuration.let {
+            it.requirements = "requirements.txt"
+            it.force = true
+        }
+        val command = "ansible-galaxy install --force-with-deps -r requirements.txt"
+        assertEquals(command, state.getCommand().commandLineString)
+    }
+
+    /**
+     * Test the getCommand() method for non-default install directories.
+     */
+    fun testGetCommandCustomDirs() {
+        configuration.let {
+            it.collectionsDir = "abc"
+            it.rolesDir = "xyz"
+            it.requirements = "requirements.yml"
+        }
         val command = "sh -c \"" +
-            "$ansible collection install -r $requirements -p $rolesDir && " +
-            "$ansible role install -r $requirements -p $rolesDir\""
+            "ansible-galaxy collection install -r requirements.yml -p abc && " +
+            "ansible-galaxy role install -r requirements.yml -p xyz\""
         assertEquals(command, state.getCommand().commandLineString)
     }
 
@@ -214,13 +226,20 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      */
     fun testCreateProcess() {
         // Indirectly test createProcess() by executing the configuration.
+        tmpDir = createTempDirectory()
+        configuration.let {
+            it.command = ".venv/bin/ansible-galaxy"
+            it.requirements = getTestPath("/ansible/requirements.yml")
+            it.rolesDir = tmpDir.toString()
+            it.collectionsDir = it.rolesDir
+        }
         val env = state.environment
         state.execute(env.executor, env.runner).processHandler.let {
             it.startNotify()
             it.waitFor()
             assertEquals(0, it.exitCode)
-            assertTrue(rolesDir.resolve("mdklatt.tmpdir").toFile().isDirectory)
-            assertTrue(rolesDir.resolve("ansible_collections/ansible/posix").toFile().isDirectory)
+            assertTrue(tmpDir!!.resolve("mdklatt.tmpdir").toFile().isDirectory)
+            assertTrue(tmpDir!!.resolve("ansible_collections/ansible/posix").toFile().isDirectory)
         }
     }
 
