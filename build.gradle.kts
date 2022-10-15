@@ -55,6 +55,25 @@ plugins {
 }
 
 
+intellij {
+    // <https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html>
+    version.set(properties("platformVersion"))
+    updateSinceUntilBuild.set(true)
+    downloadSources.set(true)
+}
+
+
+changelog {
+    // <https://github.com/JetBrains/gradle-changelog-plugin>
+    path.set("${project.projectDir}/CHANGELOG.md")
+    header.set(provider { "[${version.get()}] - ${date()}" })
+    itemPrefix.set("-")
+    keepUnreleasedSection.set(false)
+    unreleasedTerm.set("[Unreleased]")
+    groups.set(listOf("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"))
+}
+
+
 repositories {
     mavenCentral()
 }
@@ -149,22 +168,4 @@ tasks {
         dependsOn(verifyPluginConfiguration)
         dependsOn(runPluginVerifier)
     }
-}
-
-
-intellij {
-    // <https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html>
-    version.set(properties("platformVersion"))
-    updateSinceUntilBuild.set(true)
-    downloadSources.set(true)
-}
-
-
-changelog {
-    // <https://github.com/JetBrains/gradle-changelog-plugin>
-    path.set("${project.projectDir}/CHANGELOG.md")
-    header.set(provider { "[${version.get()}] - ${date()}" })
-    itemPrefix.set("-")
-    unreleasedTerm.set("[Unreleased]")
-    groups.set(listOf("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"))
 }
