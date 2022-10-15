@@ -2,11 +2,20 @@
 
 # Ansible Plugin Changelog
 
-## [0.1.0-alpha.0]
+## [Unreleased]
 ### Added
-- **Ansible Playbook** Run Configuration
-- **Ansible Galaxy** Run Configuration
 
 ### Changed
 
+### Deprecated
+
+### Removed
+
 ### Fixed
+
+### Security
+
+## [1.0.0] - 2022-10-15
+### Added
+- Initial release.
+
