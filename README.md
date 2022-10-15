@@ -45,9 +45,11 @@ Execute playbooks using [ansible-playbook][12].
 
 ## Installation
 
-[Releases][3] include a binary distribution named `idea-ansible-plugin-<version>.zip`
-that can be used to [install the plugin from disk][11].
+The latest version is available via a [custom plugin repository][13]. [Releases][3] 
+include a binary distribution named `idea-ansible-plugin-<version>.zip` that
+can be [installed from disk][14].
 
 
-[13]: https://www.jetbrains.com/help/idea/managing-plugins.html#install_plugin_from_disk
+[13]: https://mdklatt.github.io/idea-plugin-repo
+[14]: https://www.jetbrains.com/help/idea/managing-plugins.html#install_plugin_from_disk
 
