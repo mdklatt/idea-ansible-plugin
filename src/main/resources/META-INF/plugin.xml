@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>software.mdklatt.idea.ansible</id>
+    <id>dev.mdklatt.idea.ansible</id>
     <name>Ansible</name>
     <vendor email="mdklatt@alumni.ou.edu" url="https://github.com/mdklatt/idea-ansible-plugin">Michael Klatt</vendor>
 
