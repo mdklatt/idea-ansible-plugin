@@ -220,27 +220,38 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         // TODO: Use general `ansible install` if custom paths aren't needed.
         val rolesDir = config.rolesDir.ifEmpty { null }
         val collectionsDir = config.collectionsDir.ifEmpty { null }
-        if (rolesDir == null && collectionsDir == null) {
-            // Use basic install command.
-            return getInstallCommand()
+        val command = if (rolesDir == null && collectionsDir == null) {
+            // Use basic all-in-one command.
+            getInstallCommand()
         }
-        val compoundCommand = sequenceOf(
-            getInstallCommand("collection", collectionsDir),
-            getInstallCommand("role", rolesDir),
-        ).map { it.commandLineString }.joinToString(" && ")
-        return PosixCommandLine("sh", "-c", compoundCommand)
+        else {
+            // Need to install collections and roles separately because
+            // non-default output directories were specified.
+            val compoundCommand = sequenceOf(
+                getInstallCommand("collection", collectionsDir),
+                getInstallCommand("role", rolesDir),
+            ).map { it.commandLineString }.joinToString(" && ")
+            PosixCommandLine("sh", "-c", compoundCommand)
+        }
+        command.let {
+            if (config.workDir.isNotBlank()) {
+                it.withWorkDirectory(config.workDir)
+            }
+        }
+        return command
     }
 
     /**
      * Get an install command.
      *
-     * @param type: installation type
+     * @param type: installation type (default, 'collection', or 'role')
      * @param path: installation path
      * @return installation command
      */
     private fun getInstallCommand(type: String? = null, path: String? = null): PosixCommandLine {
-        // Ansible uses a POSIX-style CLI regardless of the host OS, so
-        // PosixCommandLine is okay here.
+        // An Ansible control node must be *nix, so PosixCommandLine is
+        // the OS-agnostic choice here.
+        // https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#control-node-requirements
         val forceOption = if (config.deps) "force-with-deps" else "force"
         val commonOptions = mapOf(
             "no-deps" to !config.deps,
@@ -251,9 +262,6 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         return PosixCommandLine(config.command, subcommand).also {
             it.addOptions(commonOptions + mapOf("p" to path))
             it.addParameters(CommandLine.split(config.rawOpts))
-            if (config.workDir.isNotBlank()) {
-                it.withWorkDirectory(config.workDir)
-            }
         }
     }
 }
