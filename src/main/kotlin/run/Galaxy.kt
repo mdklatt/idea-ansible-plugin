@@ -217,40 +217,37 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         // is definitely a code small. Instead, multiple execution is being
         // delegated to the shell. Ansible requires WSL on Windows anyway, so
         // this is technically OS-agnostic.
-        // TODO: Use general `ansible install` if custom paths aren't needed.
         val rolesDir = config.rolesDir.ifEmpty { null }
         val collectionsDir = config.collectionsDir.ifEmpty { null }
         val command = if (rolesDir == null && collectionsDir == null) {
             // Use basic all-in-one command.
-            getInstallCommand()
+            createCommand()
         }
         else {
             // Need to install collections and roles separately because
             // non-default output directories were specified.
-            val compoundCommand = sequenceOf(
-                getInstallCommand("collection", collectionsDir),
-                getInstallCommand("role", rolesDir),
-            ).map { it.commandLineString }.joinToString(" && ")
-            PosixCommandLine("sh", "-c", compoundCommand)
+            joinCommands(
+                createCommand("collection", collectionsDir),
+                createCommand("role", rolesDir),
+            )
         }
-        command.let {
+        return command.also {
             if (config.workDir.isNotBlank()) {
                 it.withWorkDirectory(config.workDir)
             }
         }
-        return command
     }
 
     /**
-     * Get an install command.
+     * Construct an install command.
      *
      * @param type: installation type (default, 'collection', or 'role')
      * @param path: installation path
      * @return installation command
      */
-    private fun getInstallCommand(type: String? = null, path: String? = null): PosixCommandLine {
-        // An Ansible control node must be *nix, so PosixCommandLine is
-        // the OS-agnostic choice here.
+    private fun createCommand(type: String? = null, path: String? = null): PosixCommandLine {
+        // An Ansible control node must be *nix, so PosixCommandLine is the
+        // OS-agnostic choice here.
         // https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#control-node-requirements
         val forceOption = if (config.deps) "force-with-deps" else "force"
         val commonOptions = mapOf(
@@ -263,6 +260,17 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             it.addOptions(commonOptions + mapOf("p" to path))
             it.addParameters(CommandLine.split(config.rawOpts))
         }
+    }
+
+    /**
+     * Join commands into a single command.
+     *
+     * @param commands: one or more commands to execute
+     * @return joined command
+     */
+    private fun joinCommands(vararg commands: PosixCommandLine): PosixCommandLine {
+        val compoundCommand = commands.map { it.commandLineString }.joinToString(" && ")
+        return PosixCommandLine("sh", "-c", compoundCommand)
     }
 }
 
