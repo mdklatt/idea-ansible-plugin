@@ -14,6 +14,8 @@ import org.jdom.Element
 import java.util.*
 import javax.swing.JComponent
 import kotlin.RuntimeException
+import kotlin.io.path.Path
+import kotlin.io.path.pathString
 
 
 /**
@@ -67,6 +69,7 @@ class GalaxyOptions : RunConfigurationOptions() {
     internal var rolesDir by string()
     internal var force by property(false)
     internal var command by string("ansible-galaxy")
+    internal var virtualEnv by string()
     internal var rawOpts by string()
     internal var workDir by string()
 }
@@ -122,6 +125,11 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
         get() = options.command ?: ""
         set(value) {
             options.command = value.ifBlank { "ansible-galaxy" }
+        }
+    internal var virtualEnv: String
+        get() = options.virtualEnv ?: ""
+        set(value) {
+            options.virtualEnv = value
         }
     internal var rawOpts: String
         get() = options.rawOpts ?: ""
@@ -232,6 +240,10 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             )
         }
         return command.also {
+            if (config.virtualEnv.isNotBlank()) {
+                val path = Path(config.workDir, config.virtualEnv)
+                it.setPythonVenv(path.pathString)
+            }
             if (config.workDir.isNotBlank()) {
                 it.withWorkDirectory(config.workDir)
             }
@@ -288,6 +300,7 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
     private var rolesDir = ""
     private var force = false
     private var command = ""
+    private var virtualEnv = ""
     private var rawOpts = ""
     private var workDir = ""
 
@@ -318,6 +331,11 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
                 row("Ansible command:") {
                     textFieldWithBrowseButton("Ansible Command").bindText(::command)
                 }
+                row("Python virtualenv:") {
+                    textFieldWithBrowseButton("Python Virtual Environment",
+                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                    ).bindText(::virtualEnv)
+                }
                 row("Raw options:") {
                     expandableTextField().bindText(::rawOpts)
                 }
@@ -344,6 +362,7 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
             collectionsDir = it.collectionsDir
             rolesDir = it.rolesDir
             command = it.command
+            virtualEnv = it.virtualEnv
             rawOpts = it.rawOpts
             workDir = it.workDir
         }
@@ -365,6 +384,7 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
             it.collectionsDir = collectionsDir
             it.rolesDir = rolesDir
             it.command = command
+            it.virtualEnv = virtualEnv
             it.rawOpts = rawOpts
             it.workDir = workDir
         }

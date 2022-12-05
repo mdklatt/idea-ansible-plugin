@@ -91,6 +91,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             assertEquals("", it.rolesDir)
             assertFalse(it.force)
             assertEquals("ansible-galaxy", it.command)
+            assertEquals("", it.virtualEnv)
             assertEquals("", it.rawOpts)
             assertEquals("", it.workDir)
         }
@@ -108,6 +109,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             it.rolesDir = "roles"
             it.force = true
             it.command = "/path/to/ansible-galaxy"
+            it.virtualEnv = "/path/to/venv"
             it.rawOpts = "one \"two\""
             it.workDir = "/path/to/project"
             it.writeExternal(element)
@@ -120,6 +122,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             assertEquals("roles", it.rolesDir)
             assertEquals(true, it.force)
             assertEquals("/path/to/ansible-galaxy", it.command)
+            assertEquals("/path/to/venv", it.virtualEnv)
             assertEquals("one \"two\"", it.rawOpts)
             assertEquals("/path/to/project", it.workDir)
         }
@@ -222,13 +225,14 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
     }
 
     /**
-     * Test the createProcess() method.
+     * Test the startProcess() method.
      */
-    fun testCreateProcess() {
-        // Indirectly test createProcess() by executing the configuration.
+    fun testStartProcess() {
+        // Indirectly test protected startProcess() method by executing the
+        // configuration.
         tmpDir = createTempDirectory()
         configuration.let {
-            it.command = ".venv/bin/ansible-galaxy"
+            it.virtualEnv = ".venv"
             it.requirements = getTestPath("/ansible/requirements.yml")
             it.rolesDir = tmpDir.toString()
             it.collectionsDir = it.rolesDir
