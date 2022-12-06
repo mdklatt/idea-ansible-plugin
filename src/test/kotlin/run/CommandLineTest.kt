@@ -31,18 +31,6 @@ internal class CommandLineTest : BasePlatformTestCase() {
     }
 
     /**
-     * Test the setPythonVenv() extension method.
-     */
-    fun testSetPythonVenv() {
-        command.setPythonVenv(".venv")
-        OSProcessHandler(command).let {
-            it.startNotify()
-            it.waitFor()
-            assertEquals(0, it.exitCode)
-        }
-    }
-
-    /**
      * Test the withPythonVenv() extension method.
      */
     fun testWithPythonVenv() {
