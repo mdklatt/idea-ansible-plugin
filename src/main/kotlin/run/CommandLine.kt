@@ -21,14 +21,10 @@ fun CommandLine.setPythonVenv(venvPath: String) {
     // <https://virtualenv.pypa.io/en/latest/user_guide.html#activators>
     val venv = Path(venvPath).toAbsolutePath()
     val path = venv.resolve("bin")
-    val pathVar = if (environment.containsKey("PATH")) {
-        listOf(path.pathString, environment["PATH"]).joinToString { File.pathSeparator }
-    } else {
-        path.pathString
-    }
+    val pathEnv = environment["PATH"] ?: System.getenv("PATH")
     withEnvironment(mapOf<String, Any?>(
         "VIRTUAL_ENV" to venv.pathString,
-        "PATH" to pathVar,
+        "PATH" to listOf(path.pathString, pathEnv).joinToString(File.pathSeparator),
         "PYTHONHOME" to if (environment.containsKey("PYTHONHOME")) "" else null,
     ))
 }
