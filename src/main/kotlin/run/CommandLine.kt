@@ -23,10 +23,11 @@ fun CommandLine.withPythonVenv(venvPath: String): CommandLine {
     val venv = Path(venvPath).toAbsolutePath()
     val path = venv.resolve("bin")
     val pathEnv = environment["PATH"] ?: System.getenv("PATH")
+    val homeEnv = environment["PYTHONHOME"] ?: System.getenv("PYTHONHOME")
     withEnvironment(mapOf<String, Any?>(
         "VIRTUAL_ENV" to venv.pathString,
         "PATH" to listOf(path.pathString, pathEnv).joinToString(File.pathSeparator),
-        "PYTHONHOME" to if (environment.containsKey("PYTHONHOME")) "" else null,
+        "PYTHONHOME" to if (homeEnv != null) "" else null,  // null to ignore
     ))
     return this
 }
