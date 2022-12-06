@@ -1,15 +1,17 @@
 package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.ExecutionException
-import com.intellij.execution.configurations.CommandLineState
-import com.intellij.execution.configurations.ConfigurationTypeBase
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.configurations.RunConfigurationOptions
+import com.intellij.execution.configurations.*
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
+import org.jdom.Element
+import java.lang.RuntimeException
+import java.util.*
 
 
 class AnsibleConfigurationType : ConfigurationTypeBase(
@@ -32,12 +34,97 @@ class AnsibleConfigurationType : ConfigurationTypeBase(
  *
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
  */
-abstract class AnsibleOptions(command: String) : RunConfigurationOptions() {
+abstract class AnsibleOptions(ansibleCommand: String) : RunConfigurationOptions() {
     internal var uid by string()
-    internal var command by string(command)
+    internal var command by string(ansibleCommand)
     internal var virtualEnv by string()
     internal var rawOpts by string()
     internal var workDir by string()
+}
+
+
+/**
+ * Base class for Ansible run configurations.
+ *
+ * This base class defines options common to all run configurations.
+ *
+ * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#run-configuration">Run Configuration</a>
+ */
+abstract class AnsibleRunConfiguration<Options : AnsibleOptions>(
+    project: Project,
+    factory: ConfigurationFactory,
+    name: String,
+    private val ansibleCommand: String,
+) :
+    RunConfigurationBase<Options>(project, factory, name) {
+
+    protected val logger = Logger.getInstance(this::class.java)
+
+    // TODO: Why can't options.<property> be used as a delegate for these?
+
+    internal var uid: String
+        get() {
+            if (options.uid == null) {
+                options.uid = UUID.randomUUID().toString()
+            }
+            return options.uid ?: throw RuntimeException("null UID")
+        }
+        set(value) {
+            options.uid = value
+        }
+    internal var command: String
+        get() = options.command ?: ""
+        set(value) {
+            options.command = value.ifBlank { ansibleCommand }
+        }
+    internal var virtualEnv: String
+        get() = options.virtualEnv ?: ""
+        set(value) {
+            options.virtualEnv = value
+        }
+    internal var rawOpts: String
+        get() = options.rawOpts ?: ""
+        set(value) {
+            options.rawOpts = value
+        }
+    internal var workDir: String
+        get() = options.workDir ?: ""
+        set(value) {
+            options.workDir = value
+        }
+
+    /**
+     * Get the persistent options for this instance.
+     */
+    final override fun getOptions(): Options {
+        // Kotlin considers this an unsafe cast because generics do not have
+        // runtime type information unless they are reified, which is not
+        // supported for class parameters.
+        @Suppress("UNCHECKED_CAST")
+        return super.getOptions() as Options
+    }
+
+    /**
+     * Read settings from XML.
+     */
+    override fun readExternal(element: Element) {
+        super.readExternal(element)
+        if (options.uid == null) {
+            options.uid = UUID.randomUUID().toString()
+        }
+    }
+
+    /**
+     * Write settings to XML.
+     */
+    override fun writeExternal(element: Element) {
+        val default = element.getAttributeValue("default")?.toBoolean() ?: false
+        if (default) {
+            // Do not save UID with configuration template.
+            options.uid = null
+        }
+        super.writeExternal(element)
+    }
 }
 
 

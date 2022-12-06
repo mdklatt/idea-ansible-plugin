@@ -10,10 +10,7 @@ import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.common.exec.CommandLine
 import dev.mdklatt.idea.common.exec.PosixCommandLine
-import org.jdom.Element
-import java.util.*
 import javax.swing.JComponent
-import kotlin.RuntimeException
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
@@ -76,20 +73,9 @@ class GalaxyOptions : AnsibleOptions("ansible-galaxy") {
  * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#run-configuration">Run Configuration</a>
  */
 class GalaxyRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
-        RunConfigurationBase<GalaxyOptions>(project, factory, name) {
+        AnsibleRunConfiguration<GalaxyOptions>(project, factory, name, "ansible-galaxy") {
 
     // TODO: Why can't options.<property> be used as a delegate for these?
-
-    internal var uid: String
-        get() {
-            if (options.uid == null) {
-                options.uid = UUID.randomUUID().toString()
-            }
-            return options.uid ?: throw RuntimeException("null UID")
-        }
-        set(value) {
-            options.uid = value
-        }
 
     internal var requirements: String
         get() = options.requirements ?: ""
@@ -116,59 +102,6 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
         set(value) {
             options.force = value
         }
-    internal var command: String
-        get() = options.command ?: ""
-        set(value) {
-            options.command = value.ifBlank { "ansible-galaxy" }
-        }
-    internal var virtualEnv: String
-        get() = options.virtualEnv ?: ""
-        set(value) {
-            options.virtualEnv = value
-        }
-    internal var rawOpts: String
-        get() = options.rawOpts ?: ""
-        set(value) {
-            options.rawOpts = value
-        }
-    internal var workDir: String
-        get() = options.workDir ?: ""
-        set(value) {
-            options.workDir = value
-        }
-
-    /**
-     * Get the persistent options for this instance.
-     */
-    override fun getOptions(): GalaxyOptions {
-        return super.getOptions() as GalaxyOptions
-    }
-
-    /**
-     * Read stored settings from XML.
-     *
-     * @param element XML element
-     */
-    override fun readExternal(element: Element) {
-        super.readExternal(element)
-        if (options.uid == null) {
-            options.uid = UUID.randomUUID().toString()
-        }
-    }
-
-    /**
-     * Write stored settings to XML.
-     *
-     * @param element XML element
-     */
-    override fun writeExternal(element: Element) {
-        val default = element.getAttributeValue("default")?.toBoolean() ?: false
-        if (default) {
-            // Do not save UID with configuration template.
-            options.uid = null
-        }
-        super.writeExternal(element)
-    }
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object

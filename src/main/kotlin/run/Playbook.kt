@@ -82,20 +82,10 @@ class PlaybookOptions : AnsibleOptions("ansible-playbook") {
  * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#run-configuration">Run Configuration</a>
  */
 class PlaybookRunConfiguration internal constructor(project: Project, factory: ConfigurationFactory, name: String) :
-        RunConfigurationBase<RunProfileState>(project, factory, name) {
+    AnsibleRunConfiguration<PlaybookOptions>(project, factory, name, "ansible-playbook") {
 
     private val delimit = "|"
 
-    internal var uid: String
-        get() {
-            if (options.uid == null) {
-                options.uid = UUID.randomUUID().toString()
-            }
-            return options.uid ?: throw RuntimeException("null UID")
-        }
-        set(value) {
-            options.uid = value
-        }
     internal var playbooks: MutableList<String>
         get() = options.playbooks?.split(File.pathSeparator)?.toMutableList() ?: mutableListOf()
         set(value) {
@@ -128,33 +118,6 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
         set(value) {
             options.variables = value.joinToString(delimit)
         }
-    internal var command: String
-        get() = options.command ?: ""
-        set(value) {
-            options.command = value.ifBlank { "ansible-playbook" }
-        }
-    internal var virtualEnv: String
-        get() = options.virtualEnv ?: ""
-        set(value) {
-            options.virtualEnv = value
-        }
-    internal var rawOpts: String
-        get() = options.rawOpts ?: ""
-        set(value) {
-            options.rawOpts = value
-        }
-    internal var workDir: String
-        get() = options.workDir ?: ""
-        set(value) {
-            options.workDir = value
-        }
-
-    /**
-     * Get the persistent options for this instance.
-     */
-    override fun getOptions(): PlaybookOptions {
-        return super.getOptions() as PlaybookOptions
-    }
 
     /**
      * Returns the UI control for editing the run configuration settings. If additional control over validation is required, the object
