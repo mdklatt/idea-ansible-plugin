@@ -13,14 +13,14 @@ fun properties(key: String) = project.findProperty(key).toString()
  */
 open class PythonVenvTask: Exec() {
 
-    private val venvPath = project.findProperty("venvPath").toString()
+    private val pythonVenv = project.findProperty("pythonVenv").toString()
     private val systemPython = project.findProperty("systemPython").toString()
 
     @Input
-    val argv = listOf(systemPython, "-m", "venv", venvPath)
+    val argv = listOf(systemPython, "-m", "venv", pythonVenv)
 
     @OutputFile
-    val venvPython = "${venvPath}/bin/python"
+    val venvPython = "${pythonVenv}/bin/python"
 
     init {
         commandLine = argv
@@ -33,14 +33,14 @@ open class PythonVenvTask: Exec() {
  */
 open class AnsibleTask: Exec() {
 
-    private val venvPath = project.findProperty("venvPath").toString()
+    private val pythonVenv = project.findProperty("pythonVenv").toString()
     private val ansibleVersion = project.findProperty("ansibleVersion").toString()
 
     @Input
-    val argv = listOf("${venvPath}/bin/python", "-m", "pip", "install", "ansible==${ansibleVersion}")
+    val argv = listOf("${pythonVenv}/bin/python", "-m", "pip", "install", "ansible==${ansibleVersion}")
 
     @OutputFile
-    val venvPython = "${venvPath}/bin/ansible"
+    val venvPython = "${pythonVenv}/bin/ansible"
 
     init {
         commandLine = argv
