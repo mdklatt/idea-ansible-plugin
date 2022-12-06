@@ -2,7 +2,9 @@
 
 # Ansible Plugin Changelog
 
+## [Unreleased]
 ### Added
+- Added Python virtualenv support to all run configurations.
 
 ### Changed
 
@@ -11,11 +13,12 @@
 ### Removed
 
 ### Fixed
+- Fixed handling of working directory in Galaxy run configuration.
 
 ### Security
 
 ## [1.0.1] - 2022-10-15
-### Changed
+### Fixed
 - Fixed plugin ID.
 
 ## [1.0.0] - 2022-10-15
