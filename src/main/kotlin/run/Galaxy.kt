@@ -61,17 +61,12 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
  *
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
  */
-class GalaxyOptions : RunConfigurationOptions() {
-    internal var uid by string()
+class GalaxyOptions : AnsibleOptions("ansible-galaxy") {
     internal var requirements by string()
     internal var deps by property(true)
     internal var collectionsDir by string()
     internal var rolesDir by string()
     internal var force by property(false)
-    internal var command by string("ansible-galaxy")
-    internal var virtualEnv by string()
-    internal var rawOpts by string()
-    internal var workDir by string()
 }
 
 

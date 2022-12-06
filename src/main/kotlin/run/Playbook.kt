@@ -66,18 +66,13 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
  *
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
  */
-class PlaybookOptions : RunConfigurationOptions() {
-    internal var uid by string()
+class PlaybookOptions : AnsibleOptions("ansible-playbook") {
     internal var playbooks by string()
     internal var inventory by string()
     internal var host by string()
     internal var sudoPassPrompt by property(false)
     internal var tags by string()
     internal var variables by string()
-    internal var command by string("ansible-playbook")
-    internal var virtualEnv by string()
-    internal var rawOpts by string()
-    internal var workDir by string()
 }
 
 
