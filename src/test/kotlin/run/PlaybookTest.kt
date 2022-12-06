@@ -95,6 +95,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertEquals(emptyList<String>(), it.tags)
             assertEquals(emptyList<String>(), it.variables)
             assertEquals("ansible-playbook", it.command)
+            assertEquals("", it.virtualEnv)
             assertEquals("", it.rawOpts)
             assertEquals("", it.workDir)
         }
@@ -113,6 +114,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             it.tags = listOf("abc", "xyz")
             it.variables = listOf("key1=val1", "key2=val2")
             it.command = "/path/to/ansible-playbook"
+            it.virtualEnv = "/path/to/venv"
             it.rawOpts = "one \"two\""
             it.workDir = "/path/to/project"
             config.writeExternal(element)
@@ -126,6 +128,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertEquals(listOf("abc", "xyz"), it.tags)
             assertEquals(listOf("key1=val1", "key2=val2"), it.variables)
             assertEquals("/path/to/ansible-playbook", it.command)
+            assertEquals("/path/to/venv", it.virtualEnv)
             assertEquals("one \"two\"", it.rawOpts)
             assertEquals("/path/to/project", it.workDir)
         }
@@ -195,7 +198,7 @@ internal class PlaybookSettingsEditorTest : BasePlatformTestCase() {
  */
 internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
 
-    private val ansible = ".venv/bin/ansible-playbook"
+    private val ansible = "ansible-playbook"
     private val inventory = getTestPath("/ansible/hosts.yml")
     private var playbook = getTestPath("/ansible/playbook.yml")
     private lateinit var state: PlaybookCommandLineState
@@ -209,6 +212,7 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
         val runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
         (runConfig.configuration as PlaybookRunConfiguration).also {
             it.command = ansible
+            it.virtualEnv = ".venv"
             it.inventory = mutableListOf(inventory)
             it.playbooks = mutableListOf(playbook)
         }

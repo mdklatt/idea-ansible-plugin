@@ -19,6 +19,8 @@ import java.io.File
 import java.util.*
 import javax.swing.JComponent
 import javax.swing.JPasswordField
+import kotlin.io.path.Path
+import kotlin.io.path.pathString
 
 
 /**
@@ -73,6 +75,7 @@ class PlaybookOptions : RunConfigurationOptions() {
     internal var tags by string()
     internal var variables by string()
     internal var command by string("ansible-playbook")
+    internal var virtualEnv by string()
     internal var rawOpts by string()
     internal var workDir by string()
 }
@@ -134,6 +137,11 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
         get() = options.command ?: ""
         set(value) {
             options.command = value.ifBlank { "ansible-playbook" }
+        }
+    internal var virtualEnv: String
+        get() = options.virtualEnv ?: ""
+        set(value) {
+            options.virtualEnv = value
         }
     internal var rawOpts: String
         get() = options.rawOpts ?: ""
@@ -220,6 +228,7 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
     private var tags = ""
     private var variables = ""
     private var command = ""
+    private var virtualEnv = ""
     private var rawOpts = ""
     private var workDir = ""
 
@@ -288,6 +297,11 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
                 row("Ansible command:") {
                     textFieldWithBrowseButton("Ansible Command").bindText(::command)
                 }
+                row("Python virtualenv:") {
+                    textFieldWithBrowseButton("Python Virtual Environment",
+                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                    ).bindText(::virtualEnv)
+                }
                 row("Raw options:") {
                     expandableTextField().bindText(::rawOpts)
                 }
@@ -317,6 +331,7 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
             tags = it.tags.joinToString(" ")
             variables = it.variables.joinToString(" ")
             command = it.command
+            virtualEnv = it.virtualEnv
             rawOpts = it.rawOpts
             workDir = it.workDir
         }
@@ -341,6 +356,7 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
             it.tags = tags.split(" ")
             it.variables = variables.split(" ")
             it.command = command
+            it.virtualEnv = virtualEnv
             it.rawOpts = rawOpts
             it.workDir = workDir
         }
@@ -380,6 +396,10 @@ class PlaybookCommandLineState internal constructor(environment: ExecutionEnviro
             it.addOptions(options)
             it.addParameters(CommandLine.split(config.rawOpts))
             it.addParameters(config.playbooks)
+            if (config.virtualEnv.isNotBlank()) {
+                val path = Path(config.workDir, config.virtualEnv)
+                it.withPythonVenv(path.pathString)
+            }
             if (config.workDir.isNotBlank()) {
                 it.withWorkDirectory(config.workDir)
             }
