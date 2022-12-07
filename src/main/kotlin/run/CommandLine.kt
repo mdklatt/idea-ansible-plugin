@@ -12,6 +12,8 @@ import kotlin.io.path.pathString
 /**
  * Activate a Python virtualenv environment for execution.
  *
+ * <https://virtualenv.pypa.io/en/latest/user_guide.html#activators>
+ *
  * @param venvPath: path to virtualenv directory
  * @return modified instance
  */
@@ -19,7 +21,6 @@ fun CommandLine.withPythonVenv(venvPath: String): CommandLine {
     // Per virtualenv docs, all activators do is prepend the environment's bin/
     // directory to PATH. Per inspection of an installed 'activate' script, a
     // VIRTUAL_ENV variable is also set, and PYTHONHOME is unset if it exists.
-    // <https://virtualenv.pypa.io/en/latest/user_guide.html#activators>
     val venv = Path(venvPath).toAbsolutePath()
     val path = venv.resolve("bin")
     val pathEnv = environment["PATH"] ?: System.getenv("PATH")

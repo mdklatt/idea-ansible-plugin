@@ -1,5 +1,5 @@
 /**
- * Unit tests for the Ansible module.
+ * Unit tests for the Ansible.kt.
  */
 package dev.mdklatt.idea.ansible.run
 

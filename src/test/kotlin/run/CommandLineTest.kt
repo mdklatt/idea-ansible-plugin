@@ -1,5 +1,5 @@
 /**
- * Unit tests for Galaxy.kt.
+ * Unit tests for CommandLine.kt.
  */
 package dev.mdklatt.idea.ansible.run
 

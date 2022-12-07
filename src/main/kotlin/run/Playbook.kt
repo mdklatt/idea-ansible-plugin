@@ -1,3 +1,8 @@
+/**
+ * Playbook run configuration for executing `ansible-playbook`.
+ *
+ * <https://docs.ansible.com/ansible/latest/cli/ansible-playbook.html>
+ */
 package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor

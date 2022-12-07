@@ -1,3 +1,8 @@
+/**
+ * Galaxy run configuration for executing `ansible-galaxy`.
+ *
+ * <https://docs.ansible.com/ansible/latest/galaxy/user_guide.html>
+ */
 package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.Executor

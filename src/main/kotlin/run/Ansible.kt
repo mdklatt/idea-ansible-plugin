@@ -1,3 +1,6 @@
+/**
+ * Base implementation of run configurations for executing Ansible commands.
+ */
 package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.ExecutionException
@@ -18,6 +21,11 @@ import java.lang.RuntimeException
 import java.util.*
 
 
+/**
+ * Run configuration type for Ansible execution.
+ *
+ * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configuration-management.html?from=jetbrains.org#configuration-type">Configuration Type</a>
+ */
 class AnsibleConfigurationType : ConfigurationTypeBase(
     "AnsibleConfigurationType",
     "Ansible",
