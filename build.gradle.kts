@@ -91,7 +91,7 @@ dependencies {
     testImplementation(kotlin("test"))
 
     // JUnit3 is required for running IDEA platform tests.
-    testImplementation(platform("org.junit:junit-bom:5.9.0"))
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
 }
 
