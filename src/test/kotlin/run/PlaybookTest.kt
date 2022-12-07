@@ -167,18 +167,18 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
 
 
 /**
- * Unit tests for the PlaybookSettingsEditor class.
+ * Unit tests for the PlaybookEditor class.
  */
-internal class PlaybookSettingsEditorTest : BasePlatformTestCase() {
+internal class PlaybookEditorTest : BasePlatformTestCase() {
 
-    private lateinit var editor: PlaybookSettingsEditor
+    private lateinit var editor: PlaybookEditor
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
-        editor = PlaybookSettingsEditor()
+        editor = PlaybookEditor()
     }
 
     // TODO: https://github.com/JetBrains/intellij-ui-test-robot

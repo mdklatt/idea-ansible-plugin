@@ -7,8 +7,12 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.util.IconLoader
+import com.intellij.ui.dsl.builder.*
 import org.jdom.Element
 import java.lang.RuntimeException
 import java.util.*
@@ -163,4 +167,134 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      * @return command
      */
     internal abstract fun getCommand(): GeneralCommandLine
+}
+
+
+/**
+ * Base class for run configuration UI
+ *
+ * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#bind-the-ui-form">Run Configurations Tutorial</a>
+ */
+abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfiguration<Options>> protected constructor() :
+    SettingsEditor<Config>() {
+
+    private var command = ""
+    private var virtualEnv = ""
+    private var rawOpts = ""
+    private var workDir = ""
+
+    /**
+     * Create the UI component.
+     *
+     * @return Swing component
+     */
+    final override fun createEditor(): DialogPanel {
+        return panel {
+            group("Command Settings") {
+                addCommandFields(this)
+            }
+            group("Ansible Settings") {
+                addAnsibleFields(this)
+            }
+        }
+    }
+
+    /**
+     * Add common Ansible settings to the UI component.
+     *
+     * @param parent: parent component builder
+     */
+    private fun addAnsibleFields(parent: Panel) {
+        parent.let {
+            it.row("Ansible command:") {
+                textFieldWithBrowseButton("Ansible Command").bindText(::command)
+            }
+            it.row("Python virtualenv:") {
+                textFieldWithBrowseButton("Python Virtual Environment",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                ).bindText(::virtualEnv)
+            }
+            it.row("Raw options:") {
+                expandableTextField().bindText(::rawOpts)
+            }
+            it.row("Working directory:") {
+                textFieldWithBrowseButton("Working Directory",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                ).bindText(::workDir)
+            }
+        }
+    }
+
+    /**
+     * Reset UI with options from configuration.
+     *
+     * @param config: run configuration
+     */
+    final override fun resetEditorFrom(config: Config) {
+        // Update bound properties from config values then reset UI.
+        resetAnsibleOptions(config)
+        resetCommandOptions(config)
+        (this.component as DialogPanel).reset()
+    }
+
+    /**
+     * Reset UI with Ansible options from configuration.
+     *
+     * @param config: run configuration
+     */
+    private fun resetAnsibleOptions(config: Config) {
+        config.let {
+            command = it.command
+            virtualEnv = it.virtualEnv
+            rawOpts = it.rawOpts
+            workDir = it.workDir
+        }
+    }
+
+    /**
+     * Apply UI options to configuration.
+     *
+     * @param config: run configuration
+     */
+    final override fun applyEditorTo(config: Config) {
+        // Apply UI to bound properties then update config values.
+        (this.component as DialogPanel).apply()
+        applyAnsibleOptions(config)
+        applyCommandOptions(config)
+    }
+
+    /**
+     * Apply Ansible options from UI to configuration.
+     *
+     * @param config: run configuration
+     */
+    private fun applyAnsibleOptions(config: Config) {
+        config.let {
+            it.command = command
+            it.virtualEnv = virtualEnv
+            it.rawOpts = rawOpts
+            it.workDir = workDir
+        }
+    }
+
+    /**
+     * Add command-specific settings to the UI component.
+     *
+     * @param parent: parent component builder
+     */
+    protected abstract fun addCommandFields(parent: Panel)
+
+    /**
+     * Reset UI with command options from configuration.
+     *
+     * @param config: run configuration
+     */
+    protected abstract fun resetCommandOptions(config: Config)
+
+    /**
+     * Apply command options from UI to configuration.
+     *
+     * @param config: run configuration
+     */
+    protected abstract fun applyCommandOptions(config: Config)
 }

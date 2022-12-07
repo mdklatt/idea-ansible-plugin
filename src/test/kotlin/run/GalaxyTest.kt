@@ -141,18 +141,18 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
 
 
 /**
- * Unit tests for the GalaxySettingsEditor class.
+ * Unit tests for the GalaxyEditor class.
  */
-internal class GalaxySettingsEditorTest : BasePlatformTestCase() {
+internal class GalaxyEditorTest : BasePlatformTestCase() {
 
-    private lateinit var editor: GalaxySettingsEditor
+    private lateinit var editor: GalaxyEditor
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
-        editor = GalaxySettingsEditor()
+        editor = GalaxyEditor()
     }
 
     // TODO: https://github.com/JetBrains/intellij-ui-test-robot

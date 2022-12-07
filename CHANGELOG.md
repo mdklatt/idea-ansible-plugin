@@ -7,6 +7,7 @@
 - Added Python virtualenv support to all run configurations.
 
 ### Changed
+- Changed layout of UI component for all run configurations
 
 ### Deprecated
 

@@ -4,9 +4,7 @@ import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.common.exec.CommandLine
@@ -17,7 +15,6 @@ import org.jdom.Element
 import java.awt.event.ItemEvent
 import java.io.File
 import java.util.*
-import javax.swing.JComponent
 import javax.swing.JPasswordField
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
@@ -127,7 +124,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
      *
      * @return the settings editor component.
      */
-    override fun getConfigurationEditor() = PlaybookSettingsEditor()
+    override fun getConfigurationEditor() = PlaybookEditor()
 
     /**
      * Prepares for executing a specific instance of the run configuration.
@@ -176,7 +173,7 @@ class PlaybookRunConfiguration internal constructor(project: Project, factory: C
  *
  * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#settings-editor">Settings Editor</a>
  */
-class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRunConfiguration>() {
+class PlaybookEditor internal constructor() : AnsibleEditor<PlaybookOptions, PlaybookRunConfiguration>() {
 
     private var playbooks = mutableListOf<String>()
     private var inventory = mutableListOf<String>()
@@ -185,44 +182,40 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
     private var sudoPassPrompt = false
     private var tags = ""
     private var variables = ""
-    private var command = ""
-    private var virtualEnv = ""
-    private var rawOpts = ""
-    private var workDir = ""
 
     /**
-     * Create the widget for this editor.
+     * Add command-specific settings to the UI component.
      *
-     * @return: UI widget
+     * @param parent: parent component builder
      */
-    override fun createEditor(): JComponent {
+    override fun addCommandFields(parent: Panel) {
         // Multiple file selection does not work as expected because the UI
         // widget does not allow multiple items to be selected. The way that
         // multiple paths are stored is unknown without a working example, but
         // it's reasonable to assume that a pathsep-delimited string is used.
         val getPathsFromField: (TextFieldWithBrowseButton) -> MutableList<String> = {
-            field -> field.text.split(File.pathSeparator).toMutableList()
+                field -> field.text.split(File.pathSeparator).toMutableList()
         }
         val setFieldFromPaths: (TextFieldWithBrowseButton, List<String>) -> Unit = {
-            field, paths -> field.text = paths.joinToString(File.pathSeparator)
+                field, paths -> field.text = paths.joinToString(File.pathSeparator)
         }
-        return panel{
-            row("Playbooks:") {
+        parent.let {
+            it.row("Playbooks:") {
                 // FIXME: Multiple file selection does not work.
                 textFieldWithBrowseButton("Playbooks",
                     fileChooserDescriptor = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor(),
                 ).bind(getPathsFromField, setFieldFromPaths, ::playbooks.toMutableProperty())
             }
-            row("Inventories:") {
+            it.row("Inventories:") {
                 // FIXME: Multiple file selection does not work.
                 textFieldWithBrowseButton("Inventories",
                     fileChooserDescriptor = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor(),
                 ).bind(getPathsFromField, setFieldFromPaths, ::inventory.toMutableProperty())
             }
-            row("Host specification:")  {
+            it.row("Host specification:")  {
                 textField().bindText(::host)
             }
-            row("Host sudo password:") {
+            it.row("Host sudo password:") {
                 val password = JPasswordField("", 20)
                 cell(password).applyIfEnabled().bind(
                     JPasswordField::getPassword,
@@ -245,40 +238,21 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
                     }
                 }
             }
-            row("Tags:")  {
+            it.row("Tags:")  {
                 textField().bindText(::tags)
             }
-            row("Extra variables:")  {
+            it.row("Extra variables:")  {
                 textField().bindText(::variables)
-            }
-            group("Environment") {
-                row("Ansible command:") {
-                    textFieldWithBrowseButton("Ansible Command").bindText(::command)
-                }
-                row("Python virtualenv:") {
-                    textFieldWithBrowseButton("Python Virtual Environment",
-                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                    ).bindText(::virtualEnv)
-                }
-                row("Raw options:") {
-                    expandableTextField().bindText(::rawOpts)
-                }
-                row("Working directory:") {
-                    textFieldWithBrowseButton("Working Directory",
-                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                    ).bindText(::workDir)
-                }
             }
         }
     }
 
     /**
-     * Reset editor fields from the saved configuration state.
+     * Reset UI with command options from configuration.
      *
      * @param config: run configuration
      */
-    override fun resetEditorFrom(config: PlaybookRunConfiguration) {
-        // Update bound properties from config value then reset UI.
+    override fun resetCommandOptions(config: PlaybookRunConfiguration) {
         config.let {
             // TODO: Handle multiple files for playbooks and inventory.
             playbooks = it.playbooks
@@ -288,22 +262,15 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
             sudoPassPrompt = it.sudoPassPrompt
             tags = it.tags.joinToString(" ")
             variables = it.variables.joinToString(" ")
-            command = it.command
-            virtualEnv = it.virtualEnv
-            rawOpts = it.rawOpts
-            workDir = it.workDir
         }
-        (this.component as DialogPanel).reset()
     }
 
     /**
-     * Apply editor fields to the configuration state.
+     * Apply command options from UI to configuration.
      *
      * @param config: run configuration
      */
-    override fun applyEditorTo(config: PlaybookRunConfiguration) {
-        // Apply UI to bound properties then update config values.
-        (this.component as DialogPanel).apply()
+    override fun applyCommandOptions(config: PlaybookRunConfiguration) {
         config.let {
             // TODO: Handle multiple files for playbooks and inventory.
             it.playbooks = playbooks
@@ -313,10 +280,6 @@ class PlaybookSettingsEditor internal constructor() : SettingsEditor<PlaybookRun
             it.sudoPassPrompt = sudoPassPrompt
             it.tags = tags.split(" ")
             it.variables = variables.split(" ")
-            it.command = command
-            it.virtualEnv = virtualEnv
-            it.rawOpts = rawOpts
-            it.workDir = workDir
         }
         return
     }

@@ -3,14 +3,10 @@ package dev.mdklatt.idea.ansible.run
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.common.exec.CommandLine
 import dev.mdklatt.idea.common.exec.PosixCommandLine
-import javax.swing.JComponent
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
@@ -111,7 +107,7 @@ class GalaxyRunConfiguration internal constructor(project: Project, factory: Con
      *
      * @return the settings editor component.
      */
-    override fun getConfigurationEditor() = GalaxySettingsEditor()
+    override fun getConfigurationEditor() = GalaxyEditor()
 
     /**
      * Prepares for executing a specific instance of the run configuration.
@@ -220,68 +216,45 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
  *
  * @see <a href="https://www.jetbrains.org/intellij/sdk/docs/basics/run_configurations/run_configuration_management.html#settings-editor">Settings Editor</a>
  */
-class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConfiguration>() {
+class GalaxyEditor internal constructor() : AnsibleEditor<GalaxyOptions, GalaxyRunConfiguration>() {
 
     private var requirements = ""
     private var deps = false
     private var collectionsDir = ""
     private var rolesDir = ""
     private var force = false
-    private var command = ""
-    private var virtualEnv = ""
-    private var rawOpts = ""
-    private var workDir = ""
 
     /**
-     * Create the widget for this editor.
+     * Add command-specific settings to the UI component.
      *
-     * @return UI widget
+     * @param parent: parent component builder
      */
-    override fun createEditor(): JComponent {
-        // https://www.jetbrains.org/intellij/sdk/docs/user_interface_components/kotlin_ui_dsl.html
-        return panel {
-            row("Requirements:") {
+    override fun addCommandFields(parent: Panel) {
+        parent.let {
+            it.row("Requirements:") {
                 textFieldWithBrowseButton("Requirements File").bindText(::requirements)
             }
-            row {
+            it.row {
                 checkBox("Install transitive dependencies").bindSelected(::deps)
             }
-            row("Collections directory:") {
+            it.row("Collections directory:") {
                 textFieldWithBrowseButton("Collections Directory").bindText(::collectionsDir)
             }
-            row("Roles directory:") {
+            it.row("Roles directory:") {
                 textFieldWithBrowseButton("Roles Directory").bindText(::rolesDir)
             }
-            row() {
+            it.row() {
                 checkBox("Overwrite existing files").bindSelected(::force)
-            }
-            group("Environment") {
-                row("Ansible command:") {
-                    textFieldWithBrowseButton("Ansible Command").bindText(::command)
-                }
-                row("Python virtualenv:") {
-                    textFieldWithBrowseButton("Python Virtual Environment",
-                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                    ).bindText(::virtualEnv)
-                }
-                row("Raw options:") {
-                    expandableTextField().bindText(::rawOpts)
-                }
-                row("Working directory:") {
-                    textFieldWithBrowseButton("Working Directory",
-                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                    ).bindText(::workDir)
-                }
             }
         }
     }
 
     /**
-     * Reset editor fields from the configuration state.
+     * Reset UI with command options from configuration.
      *
      * @param config: run configuration
      */
-    override fun resetEditorFrom(config: GalaxyRunConfiguration) {
+    override fun resetCommandOptions(config: GalaxyRunConfiguration) {
         // Update bound properties from config value then reset UI.
         config.let {
             requirements = it.requirements
@@ -289,32 +262,21 @@ class GalaxySettingsEditor internal constructor() : SettingsEditor<GalaxyRunConf
             force = it.force
             collectionsDir = it.collectionsDir
             rolesDir = it.rolesDir
-            command = it.command
-            virtualEnv = it.virtualEnv
-            rawOpts = it.rawOpts
-            workDir = it.workDir
         }
-        (this.component as DialogPanel).reset()
     }
 
     /**
-     * Apply editor fields to the configuration state.
+     * Apply command options from UI to configuration.
      *
      * @param config: run configuration
      */
-    override fun applyEditorTo(config: GalaxyRunConfiguration) {
-        // Apply UI to bound properties then update config values.
-        (this.component as DialogPanel).apply()
+    override fun applyCommandOptions(config: GalaxyRunConfiguration) {
         config.let {
             it.requirements = requirements
             it.deps = deps
             it.force = force
             it.collectionsDir = collectionsDir
             it.rolesDir = rolesDir
-            it.command = command
-            it.virtualEnv = virtualEnv
-            it.rawOpts = rawOpts
-            it.workDir = workDir
         }
     }
 }
