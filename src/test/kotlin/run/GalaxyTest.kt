@@ -116,15 +116,15 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
         }
         GalaxyRunConfiguration(project, factory, "Persistence Test").let {
             it.readExternal(element)
-            assertEquals("requirements.yml", it.requirements)
-            assertEquals(false, it.deps)
-            assertEquals("collections", it.collectionsDir)
-            assertEquals("roles", it.rolesDir)
-            assertEquals(true, it.force)
-            assertEquals("/path/to/ansible-galaxy", it.command)
-            assertEquals("/path/to/venv", it.virtualEnv)
-            assertEquals("one \"two\"", it.rawOpts)
-            assertEquals("/path/to/project", it.workDir)
+            assertEquals(config.requirements, it.requirements)
+            assertEquals(config.deps, it.deps)
+            assertEquals(config.collectionsDir, it.collectionsDir)
+            assertEquals(config.rolesDir, it.rolesDir)
+            assertEquals(config.force, it.force)
+            assertEquals(config.command, it.command)
+            assertEquals(config.virtualEnv, it.virtualEnv)
+            assertEquals(config.rawOpts, it.rawOpts)
+            assertEquals(config.workDir, it.workDir)
         }
     }
 

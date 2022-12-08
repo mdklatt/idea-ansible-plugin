@@ -121,16 +121,16 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
         }
         PlaybookRunConfiguration(project, factory, "Persistence Text").let {
             it.readExternal(element)
-            assertEquals(listOf("playbook.yml"), it.playbooks)
-            assertEquals(listOf("hosts.yml"), it.inventory)
-            assertEquals("hostname", it.host)
+            assertEquals(config.playbooks, it.playbooks)
+            assertEquals(config.inventory, it.inventory)
+            assertEquals(config.host, it.host)
             assertContentEquals(config.sudoPass.value, it.sudoPass.value)
-            assertEquals(listOf("abc", "xyz"), it.tags)
-            assertEquals(listOf("key1=val1", "key2=val2"), it.variables)
-            assertEquals("/path/to/ansible-playbook", it.command)
-            assertEquals("/path/to/venv", it.virtualEnv)
-            assertEquals("one \"two\"", it.rawOpts)
-            assertEquals("/path/to/project", it.workDir)
+            assertEquals(config.tags, it.tags)
+            assertEquals(config.variables, it.variables)
+            assertEquals(config.command, it.command)
+            assertEquals(config.virtualEnv, it.virtualEnv)
+            assertEquals(config.rawOpts, it.rawOpts)
+            assertEquals(config.workDir, it.workDir)
         }
     }
 
