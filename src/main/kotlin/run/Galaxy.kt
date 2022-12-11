@@ -5,6 +5,8 @@
  */
 package dev.mdklatt.idea.ansible.run
 
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.decodeFromStream
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.*
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -12,6 +14,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.common.exec.CommandLine
 import dev.mdklatt.idea.common.exec.PosixCommandLine
+import kotlinx.serialization.Serializable
+import java.io.File
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
@@ -163,10 +167,16 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         else {
             // Need to install collections and roles separately because
             // non-default output directories were specified.
-            joinCommands(
-                createCommand("collection", collectionsDir),
-                createCommand("role", rolesDir),
-            )
+            val commands = mutableListOf<PosixCommandLine>()
+            parseRequirements().let {
+                if (it.collections != null) {
+                    commands.add(createCommand("collection", collectionsDir))
+                }
+                if (it.roles != null) {
+                    commands.add(createCommand("role", rolesDir))
+                }
+            }
+            joinCommands(commands.asSequence())
         }
         return command.also {
             if (config.virtualEnv.isNotBlank()) {
@@ -209,9 +219,22 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
      * @param commands: one or more commands to execute
      * @return joined command
      */
-    private fun joinCommands(vararg commands: PosixCommandLine): PosixCommandLine {
+    private fun joinCommands(commands: Sequence<PosixCommandLine>): PosixCommandLine {
         val compoundCommand = commands.map { it.commandLineString }.joinToString(" && ")
         return PosixCommandLine("sh", "-c", compoundCommand)
+    }
+
+    /**
+     *
+     */
+    private fun parseRequirements(): Requirements {
+        val file = File(config.requirements)
+        return if (file.exists()) {
+            Yaml.default.decodeFromStream(file.inputStream())
+        } else {
+            logger.warn("Could not open ${file.path}")
+            Requirements()
+        }
     }
 }
 
@@ -285,3 +308,10 @@ class GalaxyEditor internal constructor() : AnsibleEditor<GalaxyOptions, GalaxyR
         }
     }
 }
+
+
+@Serializable
+data class Requirements(
+    val roles: List<Map<String, String>>? = null,
+    val collections: List<Map<String, String>>? = null,
+)

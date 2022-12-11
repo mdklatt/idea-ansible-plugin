@@ -149,6 +149,8 @@ abstract class AnsibleRunConfiguration<Options : AnsibleOptions>(
 abstract class AnsibleCommandLineState internal constructor(environment: ExecutionEnvironment) :
     CommandLineState(environment) {
 
+    protected val logger = Logger.getInstance(this::class.java)
+
     /**
      * Start the process.
      *

@@ -51,6 +51,7 @@ open class AnsibleTask: Exec() {
 
 plugins {
     kotlin("jvm") version("1.7.10")
+    kotlin("plugin.serialization") version("1.7.10")
     id("org.jetbrains.intellij") version("1.10.0")
     id("org.jetbrains.changelog") version("2.0.0")
 }
@@ -81,6 +82,7 @@ repositories {
 
 
 dependencies {
+    implementation("com.charleskorn.kaml:kaml:0.49.0")
     implementation("dev.mdklatt:idea-common") {
         version {
             // Pointing to a tag or commit is not supported yet.

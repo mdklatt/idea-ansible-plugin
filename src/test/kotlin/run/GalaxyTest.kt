@@ -213,14 +213,15 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      * Test the getCommand() method for non-default install directories.
      */
     fun testGetCommandCustomDirs() {
+        val requirements = getTestPath("/ansible/requirements.yml")
         configuration.let {
             it.collectionsDir = "abc"
             it.rolesDir = "xyz"
-            it.requirements = "requirements.yml"
+            it.requirements = getTestPath("/ansible/requirements.yml")
         }
         val command = "sh -c \"" +
-            "ansible-galaxy collection install -r requirements.yml -p abc && " +
-            "ansible-galaxy role install -r requirements.yml -p xyz\""
+            "ansible-galaxy collection install -r $requirements -p abc && " +
+            "ansible-galaxy role install -r $requirements -p xyz\""
         assertEquals(command, state.getCommand().commandLineString)
     }
 
