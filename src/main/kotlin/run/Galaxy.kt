@@ -15,7 +15,7 @@ import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.common.exec.CommandLine
 import dev.mdklatt.idea.common.exec.PosixCommandLine
 import kotlinx.serialization.Serializable
-import java.io.File
+import java.io.FileNotFoundException
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
@@ -180,7 +180,7 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         }
         return command.also {
             if (config.virtualEnv.isNotBlank()) {
-                val path = Path(config.workDir, config.virtualEnv)
+                val path = Path(config.workDir).resolve(config.virtualEnv)
                 it.withPythonVenv(path.pathString)
             }
             if (config.workDir.isNotBlank()) {
@@ -225,15 +225,16 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
     }
 
     /**
+     * Parse the requirements file.
      *
+     * @return requirements data
      */
     private fun parseRequirements(): Requirements {
-        val file = File(config.requirements)
+        val file = Path(config.workDir).resolve(config.requirements).toFile()
         return if (file.exists()) {
             Yaml.default.decodeFromStream(file.inputStream())
         } else {
-            logger.warn("Could not open ${file.path}")
-            Requirements()
+            throw FileNotFoundException("Unknown requirements file '${config.requirements}'")
         }
     }
 }
@@ -310,6 +311,11 @@ class GalaxyEditor internal constructor() : AnsibleEditor<GalaxyOptions, GalaxyR
 }
 
 
+/**
+ * Schema for an Ansible requirements file.
+ *
+ * @see <a href="https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#install-multiple-collections-with-a-requirements-file">requirements files</a>
+ */
 @Serializable
 data class Requirements(
     val roles: List<Map<String, String>>? = null,
