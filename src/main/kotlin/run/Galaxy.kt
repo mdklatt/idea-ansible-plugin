@@ -176,7 +176,15 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
                     commands.add(createCommand("role", rolesDir))
                 }
             }
-            joinCommands(commands.asSequence())
+            joinCommands(commands.asSequence()).also {
+                it.withEnvironment(mapOf<String, Any?>(
+                    // Silence warnings about unconfigured directories, which
+                    // only matter when the collections and/or roles are
+                    // consumed by `ansible-playbook`.
+                    "ANSIBLE_COLLECTIONS_PATHS" to collectionsDir,
+                    "ANSIBLE_ROLES_PATH" to rolesDir,
+                ))
+            }
         }
         return command.also {
             if (config.virtualEnv.isNotBlank()) {
