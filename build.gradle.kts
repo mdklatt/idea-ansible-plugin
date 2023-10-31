@@ -82,7 +82,7 @@ repositories {
 
 
 dependencies {
-    implementation("com.charleskorn.kaml:kaml:0.49.0")
+    implementation("com.charleskorn.kaml:kaml:0.55.0")
     implementation("com.github.mdklatt:idea-common:v0.1.0.post0")  // from JitPack
     testImplementation(kotlin("test"))
 
