@@ -49,7 +49,7 @@ open class AnsibleTask: Exec() {
 
 
 plugins {
-    kotlin("jvm") version("1.7.21")
+    kotlin("jvm") version("1.9.10")
     kotlin("plugin.serialization") version("1.7.21")
     id("org.jetbrains.intellij") version("1.11.0")
     id("org.jetbrains.changelog") version("2.0.0")
