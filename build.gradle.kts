@@ -77,18 +77,13 @@ changelog {
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 
 dependencies {
     implementation("com.charleskorn.kaml:kaml:0.49.0")
-    implementation("dev.mdklatt:idea-common") {
-        version {
-            // Pointing to a tag or commit is not supported yet.
-            // <https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/MutableVersionConstraint.html>
-            branch = "main"  // need v0.1.0 or equivalent
-        }
-    }
+    implementation("com.github.mdklatt:idea-common:v0.1.0.post0")  // from JitPack
     testImplementation(kotlin("test"))
 
     // JUnit3 is required for running IDEA platform tests.
