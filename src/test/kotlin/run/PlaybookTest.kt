@@ -199,8 +199,8 @@ internal class PlaybookEditorTest : BasePlatformTestCase() {
 internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
 
     private val ansible = "ansible-playbook"
-    private val inventory = getTestPath("/ansible/hosts.yml")
-    private var playbook = getTestPath("/ansible/playbook.yml")
+    private val inventory = getTestPath("/hosts.yml")
+    private var playbook = getTestPath("/playbook.yml")
     private lateinit var state: PlaybookCommandLineState
 
     /**

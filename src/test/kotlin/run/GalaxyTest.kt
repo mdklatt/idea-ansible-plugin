@@ -213,11 +213,11 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      * Test the getCommand() method for non-default install directories.
      */
     fun testGetCommandCustomDirs() {
-        val requirements = getTestPath("/ansible/requirements.yml")
+        val requirements = getTestPath("/requirements.yml")
         configuration.let {
             it.collectionsDir = "abc"
             it.rolesDir = "xyz"
-            it.requirements = getTestPath("/ansible/requirements.yml")
+            it.requirements = getTestPath("/requirements.yml")
         }
         val command = "sh -c \"" +
             "ansible-galaxy collection install -r $requirements -p abc && " +
@@ -234,7 +234,7 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
         tmpDir = createTempDirectory()
         configuration.let {
             it.virtualEnv = ".venv"
-            it.requirements = getTestPath("/ansible/requirements.yml")
+            it.requirements = getTestPath("/requirements.yml")
             it.rolesDir = tmpDir.toString()
             it.collectionsDir = it.rolesDir
         }
