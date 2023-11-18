@@ -6,6 +6,7 @@ package dev.mdklatt.idea.ansible.run
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.mdklatt.idea.common.exec.CommandLine
+import junit.framework.TestCase
 
 
 // The IDEA platform tests use JUnit3, so method names are used to determine
@@ -36,9 +37,22 @@ internal class CommandLineTest : BasePlatformTestCase() {
     fun testWithPythonVenv() {
         assertTrue(command == command.withPythonVenv(".venv"))
         OSProcessHandler(command).let {
+            // Run the test installation of Ansible within its virtualenv.
             it.startNotify()
             it.waitFor()
             assertEquals(0, it.exitCode)
         }
+    }
+
+    /**
+     * Test the withPythonVenv() extension method.
+     */
+    fun testWithConfigFile() {
+        // Beware of testing the value of $ANSIBLE_CONFIG, which is an
+        // implementation detail.
+        // TODO: Need a better way to test this.
+        val configPath = this::class.java.getResource("/ansible.cfg")?.path ?: ""
+        assertTrue(command == command.withConfigFile(configPath))
+        TestCase.assertEquals(configPath, command.environment["ANSIBLE_CONFIG"])
     }
 }

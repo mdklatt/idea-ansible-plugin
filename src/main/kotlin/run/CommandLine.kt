@@ -10,17 +10,16 @@ import kotlin.io.path.pathString
 
 
 /**
- * Activate a Python virtualenv environment for execution.
- *
- * <https://virtualenv.pypa.io/en/latest/user_guide.html#activators>
+ * Activate a Python virtualenv for execution.
  *
  * @param venvPath: path to virtualenv directory
  * @return modified instance
  */
-fun CommandLine.withPythonVenv(venvPath: String): CommandLine {
+internal fun CommandLine.withPythonVenv(venvPath: String): CommandLine {
     // Per virtualenv docs, all activators do is prepend the environment's bin/
     // directory to PATH. Per inspection of an installed 'activate' script, a
     // VIRTUAL_ENV variable is also set, and PYTHONHOME is unset if it exists.
+    // <https://virtualenv.pypa.io/en/latest/user_guide.html#activators>
     val venv = Path(venvPath).toAbsolutePath()
     val path = venv.resolve("bin")
     val pathEnv = environment["PATH"] ?: System.getenv("PATH")
@@ -29,6 +28,21 @@ fun CommandLine.withPythonVenv(venvPath: String): CommandLine {
         "VIRTUAL_ENV" to venv.pathString,
         "PATH" to listOf(path.pathString, pathEnv).joinToString(File.pathSeparator),
         "PYTHONHOME" to if (homeEnv != null) "" else null,  // null to ignore
+    ))
+    return this
+}
+
+
+/**
+ * Specify an Ansible config file.
+ *
+ * @param configPath: config file path
+ * @return modified instance
+ */
+internal fun CommandLine.withConfigFile(configPath: String): CommandLine {
+    // <https://docs.ansible.com/ansible/latest/reference_appendices/config.html#the-configuration-file>
+    withEnvironment(mapOf<String, Any?>(
+        "ANSIBLE_CONFIG" to configPath,
     ))
     return this
 }
