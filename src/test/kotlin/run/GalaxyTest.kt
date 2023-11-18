@@ -109,6 +109,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             it.rolesDir = "roles"
             it.force = true
             it.command = "/path/to/ansible-galaxy"
+            it.configFile = "/ansible.cfg"
             it.virtualEnv = "/path/to/venv"
             it.rawOpts = "one \"two\""
             it.workDir = "/path/to/project"
@@ -122,6 +123,7 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             assertEquals(config.rolesDir, it.rolesDir)
             assertEquals(config.force, it.force)
             assertEquals(config.command, it.command)
+            assertEquals(config.configFile, it.configFile)
             assertEquals(config.virtualEnv, it.virtualEnv)
             assertEquals(config.rawOpts, it.rawOpts)
             assertEquals(config.workDir, it.workDir)
@@ -233,6 +235,7 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
         // configuration.
         tmpDir = createTempDirectory()
         configuration.let {
+            it.configFile = getTestPath("/ansible.cfg")
             it.virtualEnv = ".venv"
             it.requirements = getTestPath("/requirements.yml")
             it.rolesDir = tmpDir.toString()

@@ -49,6 +49,7 @@ class AnsibleConfigurationType : ConfigurationTypeBase(
 abstract class AnsibleOptions(ansibleCommand: String) : RunConfigurationOptions() {
     internal var uid by string()
     internal var command by string(ansibleCommand)
+    internal var configFile by string()
     internal var virtualEnv by string()
     internal var rawOpts by string()
     internal var workDir by string()
@@ -88,6 +89,11 @@ abstract class AnsibleRunConfiguration<Options : AnsibleOptions>(
         get() = options.command ?: ""
         set(value) {
             options.command = value.ifBlank { ansibleCommand }
+        }
+    internal var configFile: String
+        get() = options.configFile ?: ""
+        set(value) {
+            options.configFile = value
         }
     internal var virtualEnv: String
         get() = options.virtualEnv ?: ""
@@ -189,6 +195,7 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
     SettingsEditor<Config>() {
 
     private var command = ""
+    private var configFile = ""
     private var virtualEnv = ""
     private var rawOpts = ""
     private var workDir = ""
@@ -218,6 +225,11 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
         parent.let {
             it.row("Ansible command:") {
                 textFieldWithBrowseButton("Ansible Command").bindText(::command)
+            }
+            it.row("Ansible config file:") {
+                textFieldWithBrowseButton("Ansible Config File",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                ).bindText(::configFile)
             }
             it.row("Python virtualenv:") {
                 textFieldWithBrowseButton("Python Virtual Environment",
@@ -255,6 +267,7 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
     private fun resetAnsibleOptions(config: Config) {
         config.let {
             command = it.command
+            configFile = it.configFile
             virtualEnv = it.virtualEnv
             rawOpts = it.rawOpts
             workDir = it.workDir
@@ -281,6 +294,7 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
     private fun applyAnsibleOptions(config: Config) {
         config.let {
             it.command = command
+            it.configFile = configFile
             it.virtualEnv = virtualEnv
             it.rawOpts = rawOpts
             it.workDir = workDir

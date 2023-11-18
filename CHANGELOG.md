@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- Added Ansible config file option to all run configurations.
 
 ### Changed
 
@@ -13,6 +14,8 @@
 ### Removed
 
 ### Fixed
+- Fixed working directory handling in Galaxy run configuration.
+- Fixed nuisance warnings in Galaxy run configuration.
 
 ### Security
 

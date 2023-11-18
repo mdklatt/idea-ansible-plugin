@@ -187,6 +187,9 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             }
         }
         return command.also {
+            if (config.configFile.isNotBlank()) {
+                it.withConfigFile(config.configFile)
+            }
             if (config.virtualEnv.isNotBlank()) {
                 val path = Path(config.workDir).resolve(config.virtualEnv)
                 it.withPythonVenv(path.pathString)

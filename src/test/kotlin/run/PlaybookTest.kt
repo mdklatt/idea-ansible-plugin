@@ -95,6 +95,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertEquals(emptyList<String>(), it.tags)
             assertEquals(emptyList<String>(), it.variables)
             assertEquals("ansible-playbook", it.command)
+            assertEquals("", it.configFile)
             assertEquals("", it.virtualEnv)
             assertEquals("", it.rawOpts)
             assertEquals("", it.workDir)
@@ -114,6 +115,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             it.tags = listOf("abc", "xyz")
             it.variables = listOf("key1=val1", "key2=val2")
             it.command = "/path/to/ansible-playbook"
+            it.configFile = "/ansible.cfg"
             it.virtualEnv = "/path/to/venv"
             it.rawOpts = "one \"two\""
             it.workDir = "/path/to/project"
@@ -128,6 +130,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertEquals(config.tags, it.tags)
             assertEquals(config.variables, it.variables)
             assertEquals(config.command, it.command)
+            assertEquals(config.configFile, it.configFile)
             assertEquals(config.virtualEnv, it.virtualEnv)
             assertEquals(config.rawOpts, it.rawOpts)
             assertEquals(config.workDir, it.workDir)
@@ -212,6 +215,7 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
         val runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
         (runConfig.configuration as PlaybookRunConfiguration).also {
             it.command = ansible
+            it.configFile = getTestPath("/ansible.cfg")
             it.virtualEnv = ".venv"
             it.inventory = mutableListOf(inventory)
             it.playbooks = mutableListOf(playbook)

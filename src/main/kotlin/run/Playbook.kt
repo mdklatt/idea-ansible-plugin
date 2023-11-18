@@ -322,6 +322,9 @@ class PlaybookCommandLineState internal constructor(environment: ExecutionEnviro
             it.addOptions(options)
             it.addParameters(CommandLine.splitArguments(config.rawOpts))
             it.addParameters(config.playbooks)
+            if (config.configFile.isNotBlank()) {
+                it.withConfigFile(config.configFile)
+            }
             if (config.virtualEnv.isNotBlank()) {
                 val path = Path(config.workDir, config.virtualEnv)
                 it.withPythonVenv(path.pathString)
