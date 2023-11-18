@@ -320,7 +320,7 @@ class PlaybookCommandLineState internal constructor(environment: ExecutionEnviro
                 options["ask-become-pass"] = true
             }
             it.addOptions(options)
-            it.addParameters(CommandLine.split(config.rawOpts))
+            it.addParameters(CommandLine.splitArguments(config.rawOpts))
             it.addParameters(config.playbooks)
             if (config.virtualEnv.isNotBlank()) {
                 val path = Path(config.workDir, config.virtualEnv)

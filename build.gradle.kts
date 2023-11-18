@@ -84,7 +84,7 @@ repositories {
 dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation("com.charleskorn.kaml:kaml:0.55.0")
-    implementation("com.github.mdklatt:idea-common:v0.1.0.post0")  // from JitPack
+    implementation("com.github.mdklatt:idea-common:v0.2.0")  // from JitPack
     testImplementation(kotlin("test"))
 
     // JUnit3 is required for running IDEA platform tests.

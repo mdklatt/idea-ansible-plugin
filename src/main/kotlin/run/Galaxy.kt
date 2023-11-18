@@ -176,7 +176,7 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
                     commands.add(createCommand("role", rolesDir))
                 }
             }
-            joinCommands(commands.asSequence()).also {
+            PosixCommandLine.andCommands(commands.asSequence()).also {
                 it.withEnvironment(mapOf<String, Any?>(
                     // Silence warnings about unconfigured directories, which
                     // only matter when the collections and/or roles are
@@ -217,19 +217,8 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
         val subcommand = sequenceOf(type, "install").filterNotNull()
         return PosixCommandLine(config.command, subcommand).also {
             it.addOptions(commonOptions + mapOf("p" to path))
-            it.addParameters(CommandLine.split(config.rawOpts))
+            it.addParameters(CommandLine.splitArguments(config.rawOpts))
         }
-    }
-
-    /**
-     * Join commands into a single command.
-     *
-     * @param commands: one or more commands to execute
-     * @return joined command
-     */
-    private fun joinCommands(commands: Sequence<PosixCommandLine>): PosixCommandLine {
-        val compoundCommand = commands.map { it.commandLineString }.joinToString(" && ")
-        return PosixCommandLine("sh", "-c", compoundCommand)
     }
 
     /**
