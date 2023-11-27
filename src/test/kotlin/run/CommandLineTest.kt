@@ -6,7 +6,6 @@ package dev.mdklatt.idea.ansible.run
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.mdklatt.idea.common.exec.CommandLine
-import junit.framework.TestCase
 
 
 // The IDEA platform tests use JUnit3, so method names are used to determine
@@ -53,6 +52,6 @@ internal class CommandLineTest : BasePlatformTestCase() {
         // TODO: Need a better way to test this.
         val configPath = this::class.java.getResource("/ansible.cfg")?.path ?: ""
         assertTrue(command == command.withConfigFile(configPath))
-        TestCase.assertEquals(configPath, command.environment["ANSIBLE_CONFIG"])
+        assertEquals(configPath, command.environment["ANSIBLE_CONFIG"])
     }
 }
