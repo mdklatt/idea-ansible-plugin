@@ -1,10 +1,10 @@
-# Ansible Plugin
+# Ansible Plugin for IDEA
 
 [![IDEA version][1]][7]
 [![Latest release][2]][3]
 [![Test status][4]][5]
 
-[1]: https://img.shields.io/static/v1?label=IDEA&message=2022.1%2B&color=informational
+[1]: https://img.shields.io/static/v1?label=IDEA&message=2023.1%2B&color=informational
 [2]: https://img.shields.io/github/v/release/mdklatt/idea-ansible-plugin?sort=semver
 [3]: https://github.com/mdklatt/idea-ansible-plugin/releases
 [4]: https://github.com/mdklatt/idea-ansible-plugin/actions/workflows/test.yml/badge.svg

@@ -2,24 +2,19 @@
 
 # Ansible Plugin Changelog
 
-## [Unreleased]
+## [1.2.0] - 2023-11-26
 
 ### Added
 - Added Ansible config file option to all run configurations.
 
 ### Changed
-
-### Deprecated
-
-### Removed
+- Bumped minimum IDEA version to 2023.1.
 
 ### Fixed
 - Fixed working directory handling in Galaxy run configuration.
 - Fixed nuisance warnings in Galaxy run configuration.
 
-### Security
-
-## [1.1.0] - 2022-12-07
+## 1.1.0 - 2022-12-07
 
 ### Added
 - Added Python virtualenv support to all run configurations.
