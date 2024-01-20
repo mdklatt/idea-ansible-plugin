@@ -2,6 +2,22 @@
 
 # Ansible Plugin Changelog
 
+## [Unreleased]
+
+### Added
+- Added dark theme logo.
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+
 ## [1.2.0] - 2023-11-26
 
 ### Added
