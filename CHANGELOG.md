@@ -36,7 +36,7 @@
 - Added Python virtualenv support to all run configurations.
 
 ### Changed
-- Changed layout of UI for all run configurations
+- Changed layout of UI for all run configurations.
 
 ### Fixed
 - Fixed handling of working directory in Galaxy run configuration.

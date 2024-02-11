@@ -51,7 +51,7 @@ open class AnsibleTask: Exec() {
 plugins {
     kotlin("jvm") version("1.9.20")
     kotlin("plugin.serialization") version("1.7.21")
-    id("org.jetbrains.intellij") version("1.16.0")
+    id("org.jetbrains.intellij") version("1.16.1")
     id("org.jetbrains.changelog") version("2.0.0")
 }
 
@@ -61,6 +61,7 @@ intellij {
     version.set(properties("platformVersion"))
     updateSinceUntilBuild.set(true)
     downloadSources.set(true)
+    plugins.set(listOf("org.jetbrains.plugins.yaml"))
 }
 
 

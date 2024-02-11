@@ -6,12 +6,22 @@
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <configurationType implementation="dev.mdklatt.idea.ansible.run.AnsibleConfigurationType"/>
+      <configurationType implementation="dev.mdklatt.idea.ansible.run.AnsibleConfigurationType"/>
+      <runConfigurationProducer implementation="dev.mdklatt.idea.ansible.actions.PlaybookConfigurationProducer"/>
     </extensions>
 
     <actions>
-        <!-- Add your actions here -->
+<!--      <group id="dev.mdklatt.idea.ansible.AnsibleActions"-->
+<!--             text="Ansible"-->
+<!--             popup="true">-->
+<!--        <add-to-group group-id="ProjectViewPopupMenuRunGroup" anchor="last"/>-->
+<!--        <action id="dev.mdklatt.idea.ansible.PlaybookRunConfiguration"-->
+<!--                class="dev.mdklatt.idea.ansible.actions.CreatePlaybookConfigurationAction"-->
+<!--                text="Create Playbook Run Configuration"-->
+<!--                description="Create a run configuration for executing an Ansible playbook"/>-->
+<!--      </group>-->
     </actions>
 </idea-plugin>
