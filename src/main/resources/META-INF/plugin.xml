@@ -10,6 +10,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
       <configurationType implementation="dev.mdklatt.idea.ansible.run.AnsibleConfigurationType"/>
+      <runConfigurationProducer implementation="dev.mdklatt.idea.ansible.actions.GalaxyConfigurationProducer"/>
       <runConfigurationProducer implementation="dev.mdklatt.idea.ansible.actions.PlaybookConfigurationProducer"/>
     </extensions>
 
