@@ -1,6 +1,7 @@
 package dev.mdklatt.idea.ansible.actions
 
 import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.ConfigurationFromContext
 import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.openapi.util.Ref
@@ -87,11 +88,22 @@ class GalaxyConfigurationProducer: AnsibleConfigurationProducer<GalaxyRunConfigu
      * @return true if this configuration is from the context
      */
     override fun isConfigurationFromContext(configuration: GalaxyRunConfiguration, context: ConfigurationContext): Boolean {
-        // According to the SDK docs, the intent of this method is to allow
-        // reuse of an existing run configuration within a context. Not sure
-        // under which situations this is called, or what the return value
-        // should be. Here, reuse is not necessary.
-        return false
+        // The SDK docs say this allows for reuse of configurations, but not
+        // sure when/how the IDE actually uses this. It does not get called
+        // when running the `runIde` Gradle task in the debugger.
+        // TODO: What are the implications of returning true or false?
+        val contextPath = context.location?.virtualFile?.path ?: return false
+        val requirementsPath = Path(configuration.workDir, configuration.requirements)
+        return contextPath == requirementsPath.toString()
+    }
+
+    override fun onFirstRun(
+        configuration: ConfigurationFromContext,
+        context: ConfigurationContext,
+        startRunnable: Runnable
+    ) {
+        // TODO: Launch configuration editor.
+        super.onFirstRun(configuration, context, startRunnable)
     }
 }
 
@@ -131,12 +143,16 @@ class PlaybookConfigurationProducer: AnsibleConfigurationProducer<PlaybookRunCon
      * @return true if this configuration is from the context
      */
     override fun isConfigurationFromContext(configuration: PlaybookRunConfiguration, context: ConfigurationContext): Boolean {
-        // According to the SDK docs, the intent of this method is to allow
-        // reuse of an existing run configuration within a context. Not sure
-        // under which situations this is called, or what the return value
-        // should be. Here, reuse does not make sense because the same playbook
-        // file (i.e. context) can have multiple run configuration with
-        // different parameters.
-        return false
+        // The SDK docs say this allows for reuse of configurations, but not
+        // sure when/how the IDE actually uses this. It does not get called
+        // when running the `runIde` Gradle task in the debugger. Playbook
+        // configurations should not be reused because the same playbook file
+        // can be used for multiple configurations (different hosts, tags,
+        // extra variables, etc)...so should this always return false?
+        // TODO: What are the implications of returning true or false?
+        val contextPath = context.location?.virtualFile?.path ?: return false
+        val playbookFile = if (configuration.playbooks.size == 1) configuration.playbooks[0] else return false
+        val requirementsPath = Path(configuration.workDir, playbookFile)
+        return contextPath == requirementsPath.toString()
     }
 }

@@ -2,8 +2,10 @@ package dev.mdklatt.idea.ansible.actions
 
 import com.intellij.execution.PsiLocation
 import com.intellij.execution.actions.ConfigurationContext
+import com.intellij.execution.actions.RunConfigurationProducer
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.utils.vfs.getPsiFile
+import dev.mdklatt.idea.ansible.run.AnsibleRunConfiguration
 import dev.mdklatt.idea.ansible.run.GalaxyRunConfiguration
 import dev.mdklatt.idea.ansible.run.PlaybookRunConfiguration
 
@@ -12,6 +14,10 @@ import dev.mdklatt.idea.ansible.run.PlaybookRunConfiguration
  * Base class for configuration producer unit tests.
  */
 internal abstract class AnsibleConfigurationProducerTest: BasePlatformTestCase() {
+
+    protected abstract val yamlFile: String
+    protected lateinit var context: ConfigurationContext
+
     /**
      * Set the path for test resource files.
      *
@@ -20,14 +26,13 @@ internal abstract class AnsibleConfigurationProducerTest: BasePlatformTestCase()
     override fun getTestDataPath() = "src/test/resources"
 
     /**
-     *
-     * @param yamlFile:
-     * @returns context for test file
+     * Per-test initialization.
      */
-    fun context(yamlFile: String): ConfigurationContext {
+    override fun setUp() {
+        super.setUp()
         val file = myFixture.copyFileToProject(yamlFile)
         val location = PsiLocation(file.getPsiFile(project))
-        return ConfigurationContext.createEmptyContextForLocation(location)
+        context = ConfigurationContext.createEmptyContextForLocation(location)
     }
 }
 
@@ -37,6 +42,7 @@ internal abstract class AnsibleConfigurationProducerTest: BasePlatformTestCase()
  */
 internal class PlaybookConfigurationProducerTest: AnsibleConfigurationProducerTest() {
 
+    override val yamlFile = "playbook.yml"
     private lateinit var producer: PlaybookConfigurationProducer
 
     /**
@@ -52,8 +58,9 @@ internal class PlaybookConfigurationProducerTest: AnsibleConfigurationProducerTe
      */
     fun testCreateConfigurationFromContext() {
         val testFile = "playbook.yml"
-        val configuration = producer.createConfigurationFromContext(context(testFile))
+        val configuration = producer.createConfigurationFromContext(context)
         (configuration?.configuration as PlaybookRunConfiguration).let {
+            assertTrue(producer.isConfigurationFromContext(it, context))
             assertSameElements(setOf(testFile), it.playbooks)
         }
     }
@@ -65,6 +72,7 @@ internal class PlaybookConfigurationProducerTest: AnsibleConfigurationProducerTe
  */
 internal class GalaxyConfigurationProducerTest: AnsibleConfigurationProducerTest() {
 
+    override val yamlFile = "requirements.yml"
     private lateinit var producer: GalaxyConfigurationProducer
 
     /**
@@ -80,8 +88,9 @@ internal class GalaxyConfigurationProducerTest: AnsibleConfigurationProducerTest
      */
     fun testCreateConfigurationFromContext() {
         val testFile = "requirements.yml"
-        val configuration = producer.createConfigurationFromContext(context(testFile))
+        val configuration = producer.createConfigurationFromContext(context)
         (configuration?.configuration as GalaxyRunConfiguration).let {
+            assertTrue(producer.isConfigurationFromContext(it, context))
             assertEquals(testFile, it.requirements)
         }
     }
