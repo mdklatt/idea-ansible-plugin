@@ -17,10 +17,15 @@
     <actions>
       <group id="dev.mdklatt.idea.ansible.AnsibleActions" text="Ansible" popup="true">
         <add-to-group group-id="ProjectViewPopupMenuRunGroup" anchor="last"/>
+        <action id="dev.mdklatt.idea.ansible.CreateGalaxyConfigurationAction"
+                class="dev.mdklatt.idea.ansible.actions.CreateGalaxyConfiguration"
+                text="Create Galaxy Run/Debug Configuration"
+                description="Create a run configuration for installing dependencies">
+        </action>
         <action id="dev.mdklatt.idea.ansible.CreatePlaybookConfigurationAction"
                 class="dev.mdklatt.idea.ansible.actions.CreatePlaybookConfiguration"
                 text="Create Playbook Run/Debug Configuration"
-                description="Create a run configuration for executing an Ansible playbook">
+                description="Create a run configuration for executing a playbook">
         </action>
      </group>
     </actions>
