@@ -15,14 +15,13 @@
     </extensions>
 
     <actions>
-<!--      <group id="dev.mdklatt.idea.ansible.AnsibleActions"-->
-<!--             text="Ansible"-->
-<!--             popup="true">-->
-<!--        <add-to-group group-id="ProjectViewPopupMenuRunGroup" anchor="last"/>-->
-<!--        <action id="dev.mdklatt.idea.ansible.PlaybookRunConfiguration"-->
-<!--                class="dev.mdklatt.idea.ansible.actions.CreatePlaybookConfigurationAction"-->
-<!--                text="Create Playbook Run Configuration"-->
-<!--                description="Create a run configuration for executing an Ansible playbook"/>-->
-<!--      </group>-->
+      <group id="dev.mdklatt.idea.ansible.AnsibleActions" text="Ansible" popup="true">
+        <add-to-group group-id="ProjectViewPopupMenuRunGroup" anchor="last"/>
+        <action id="dev.mdklatt.idea.ansible.CreatePlaybookConfigurationAction"
+                class="dev.mdklatt.idea.ansible.actions.CreatePlaybookConfiguration"
+                text="Create Playbook Run/Debug Configuration"
+                description="Create a run configuration for executing an Ansible playbook">
+        </action>
+     </group>
     </actions>
 </idea-plugin>
