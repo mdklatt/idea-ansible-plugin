@@ -9,6 +9,7 @@ import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindText
 import dev.mdklatt.idea.common.map.findFirstKey
+import kotlin.io.path.Path
 
 
 // Adapted from <https://github.com/tomblachut/svelte-intellij>
@@ -24,6 +25,7 @@ enum class InstallType { SYSTEM, VIRTUALENV, DOCKER }
  * Get project-level Ansible settings.
  */
 fun getAnsibleSettings(project: Project): AnsibleSettingsComponent = project.service<AnsibleSettingsComponent>()
+
 
 
 /**
@@ -42,6 +44,24 @@ class AnsibleSettingsState : BaseState() {
 @Service(Service.Level.PROJECT)
 @State(name = "AnsibleSettingsComponent", storages = [Storage(StoragePathMacros.WORKSPACE_FILE)])
 class AnsibleSettingsComponent: SimplePersistentStateComponent<AnsibleSettingsState>(AnsibleSettingsState()) {
+    /**
+     * Resolve a command path for the configured Ansible installation.
+     *
+     * @param command: command name
+     * @return executable command path
+     */
+    fun resolveAnsiblePath(command: String): String {
+        return when (state.installType) {
+            InstallType.SYSTEM, InstallType.DOCKER -> {
+                Path(state.ansibleLocation ?: "ansible").parent?.resolve(command)?.toString() ?: command
+            }
+            InstallType.VIRTUALENV -> {
+                // This assumes that the virtualenv is in $PATH.
+                // See CommandLine.withPythonVenv()
+                command
+            }
+        }
+    }
 }
 
 

@@ -55,6 +55,55 @@ internal class AnsibleSettingsStateTest : BasePlatformTestCase() {
 }
 
 
+internal class AnsibleSettingsComponentTest: BasePlatformTestCase() {
+
+    private lateinit var settings: AnsibleSettingsComponent
+
+    /**
+     * Per-test initialization.
+     */
+    override fun setUp() {
+        super.setUp()
+        settings = AnsibleSettingsComponent()
+    }
+
+    /**
+     * Test the `ansibleResolvePath()` method with a system path.
+     */
+    fun testResolveAnsiblePath() {
+        settings.state.installType = InstallType.SYSTEM
+        assertEquals("abc", settings.resolveAnsiblePath("abc"))
+    }
+
+    /**
+     * Test the `ansibleResolvePath()` method with an explicit system path.
+     */
+    fun testResolveAnsiblePathExplicit() {
+        settings.state.installType = InstallType.SYSTEM
+        settings.state.ansibleLocation = "/usr/bin/ansible"
+        assertEquals("/usr/bin/abc", settings.resolveAnsiblePath("abc"))
+    }
+
+    /**
+     * Test the `ansibleResolvePath()` method for a Python virtualenv.
+     */
+    fun testResolveAnsiblePathVenv() {
+        settings.state.installType = InstallType.VIRTUALENV
+        settings.state.ansibleLocation = "venv"
+        assertEquals("abc", settings.resolveAnsiblePath("abc"))
+    }
+
+    /**
+     * Test the `ansibleResolvePath()` method for a Docker container.
+     */
+    fun testResolveAnsiblePathDocker() {
+        settings.state.installType = InstallType.DOCKER
+        settings.state.ansibleLocation = "/usr/bin/ansible"
+        assertEquals("/usr/bin/abc", settings.resolveAnsiblePath("abc"))
+    }
+}
+
+
 internal class AnsibleSettingsConfigurableTest : BasePlatformTestCase() {
 
     private lateinit var configurable: AnsibleSettingsConfigurable
