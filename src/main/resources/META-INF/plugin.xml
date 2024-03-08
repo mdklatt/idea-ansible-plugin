@@ -10,6 +10,14 @@
 
     <extensions defaultExtensionNs="com.intellij">
       <configurationType implementation="dev.mdklatt.idea.ansible.run.AnsibleConfigurationType"/>
+      <runConfigurationProducer implementation="dev.mdklatt.idea.ansible.actions.GalaxyConfigurationProducer"/>
+      <runConfigurationProducer implementation="dev.mdklatt.idea.ansible.actions.PlaybookConfigurationProducer"/>
+      <projectConfigurable
+        id="dev.mdklatt.idea.ansible.ProjectSettingsConfigurable"
+        parentId="tools"
+        instance="dev.mdklatt.idea.ansible.AnsibleSettingsConfigurable"
+        displayName="Ansible"
+        nonDefaultProject="true"/>
     </extensions>
 
     <actions>
