@@ -68,6 +68,14 @@ internal class AnsibleSettingsComponentTest: BasePlatformTestCase() {
     }
 
     /**
+     * Per-test cleanup.
+     */
+    override fun tearDown() {
+        settings.loadState(AnsibleSettingsState())
+        super.tearDown()
+    }
+
+    /**
      * Test the `ansibleResolvePath()` method with a system path.
      */
     fun testResolveAnsiblePath() {

@@ -54,7 +54,7 @@ internal class PlaybookConfigurationFactoryTest : BasePlatformTestCase() {
         // Just a smoke test to ensure that the expected RunConfiguration type
         // is returned.
         factory.createTemplateConfiguration(project).let {
-            assertTrue(it.command.isNotBlank())
+            assertEquals("ansible-playbook", it.ansibleCommand)
         }
     }
 }
@@ -87,6 +87,7 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
 
     fun testConstructor() {
         config.let {
+            assertEquals("ansible-playbook", it.ansibleCommand)
             assertTrue(it.uid.isNotBlank())
             assertEquals(emptyList<String>(), it.playbooks)
             assertEquals(emptyList<String>(), it.inventory)
@@ -94,9 +95,6 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertFalse(it.sudoPassPrompt)
             assertEquals(emptyList<String>(), it.tags)
             assertEquals(emptyList<String>(), it.variables)
-            assertEquals("ansible-playbook", it.command)
-            assertEquals("", it.configFile)
-            assertEquals("", it.virtualEnv)
             assertEquals("", it.rawOpts)
             assertEquals("", it.workDir)
         }
@@ -114,9 +112,6 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             it.sudoPass.value = charArrayOf('1', '2', '3')
             it.tags = listOf("abc", "xyz")
             it.variables = listOf("key1=val1", "key2=val2")
-            it.command = "/path/to/ansible-playbook"
-            it.configFile = "/ansible.cfg"
-            it.virtualEnv = "/path/to/venv"
             it.rawOpts = "one \"two\""
             it.workDir = "/path/to/project"
             config.writeExternal(element)
@@ -129,9 +124,6 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertContentEquals(config.sudoPass.value, it.sudoPass.value)
             assertEquals(config.tags, it.tags)
             assertEquals(config.variables, it.variables)
-            assertEquals(config.command, it.command)
-            assertEquals(config.configFile, it.configFile)
-            assertEquals(config.virtualEnv, it.virtualEnv)
             assertEquals(config.rawOpts, it.rawOpts)
             assertEquals(config.workDir, it.workDir)
         }
@@ -155,17 +147,6 @@ internal class PlaybookRunConfigurationTest : BasePlatformTestCase() {
             assertTrue(it.sudoPassPrompt)
         }
     }
-
-    /**
-     * Test the `command` property default value.
-     */
-    fun testCommandDefault() {
-        config.let {
-            it.command = ""
-            assertEquals("ansible-playbook", it.command)
-        }
-    }
-
 }
 
 
@@ -199,9 +180,9 @@ internal class PlaybookEditorTest : BasePlatformTestCase() {
 /**
  * Unit tests for the PlaybookCommandLineState class.
  */
-internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
+internal class PlaybookCommandLineStateTest : AnsibleCommandLineStateTest() {
 
-    private val ansible = "ansible-playbook"
+    private val command = "ansible-playbook"
     private val inventory = getTestPath("/hosts.yml")
     private var playbook = getTestPath("/playbook.yml")
     private lateinit var state: PlaybookCommandLineState
@@ -214,9 +195,6 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
         val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
         val runConfig = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
         (runConfig.configuration as PlaybookRunConfiguration).also {
-            it.command = ansible
-            it.configFile = getTestPath("/ansible.cfg")
-            it.virtualEnv = ".venv"
             it.inventory = mutableListOf(inventory)
             it.playbooks = mutableListOf(playbook)
         }
@@ -229,7 +207,7 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
      * Test the getCommand() method.
      */
     fun testGetCommand() {
-        val command = "$ansible --inventory $inventory $playbook"
+        val command = "$command --inventory $inventory $playbook"
         assertEquals(command, state.getCommand().commandLineString)
     }
 
@@ -244,15 +222,5 @@ internal class PlaybookCommandLineStateTest : BasePlatformTestCase() {
             it.waitFor()
             assertEquals(0, it.exitCode)
         }
-    }
-
-    companion object {
-        /**
-         * Get the path to a test resource file.
-         *
-         * @param file: file path relative to the resources directory
-         * @return absolute file path
-         */
-        private fun getTestPath(file: String) = this::class.java.getResource(file)?.path ?: ""
     }
 }

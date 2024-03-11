@@ -21,8 +21,6 @@ import java.awt.event.ItemEvent
 import java.io.File
 import java.util.*
 import javax.swing.JPasswordField
-import kotlin.io.path.Path
-import kotlin.io.path.pathString
 
 
 /**
@@ -68,7 +66,7 @@ class PlaybookConfigurationFactory internal constructor(type: ConfigurationType)
  *
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
  */
-class PlaybookOptions : AnsibleOptions("ansible-playbook") {
+class PlaybookOptions : AnsibleOptions() {
     internal var playbooks by string()
     internal var inventory by string()
     internal var host by string()
@@ -314,7 +312,7 @@ class PlaybookCommandLineState internal constructor(environment: ExecutionEnviro
             "tags" to config.tags.joinToString(",").ifEmpty { null },
             "extra-vars" to config.variables.joinToString(" ").ifEmpty { null },
         )
-        return PosixCommandLine(config.command).also {
+        return PosixCommandLine(config.ansibleCommand).also {
             getPassword()?.let { password ->
                 it.withInput(password)
                 options["ask-become-pass"] = true
@@ -322,13 +320,6 @@ class PlaybookCommandLineState internal constructor(environment: ExecutionEnviro
             it.addOptions(options)
             it.addParameters(CommandLine.splitArguments(config.rawOpts))
             it.addParameters(config.playbooks)
-            if (config.configFile.isNotBlank()) {
-                it.withConfigFile(config.configFile)
-            }
-            if (config.virtualEnv.isNotBlank()) {
-                val path = Path(config.workDir, config.virtualEnv)
-                it.withPythonVenv(path.pathString)
-            }
             if (config.workDir.isNotBlank()) {
                 it.withWorkDirectory(config.workDir)
             }
