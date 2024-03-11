@@ -16,6 +16,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.dsl.builder.*
+import dev.mdklatt.idea.ansible.InstallType
+import dev.mdklatt.idea.ansible.getAnsibleSettings
+import dev.mdklatt.idea.common.exec.CommandLine
 import org.jdom.Element
 import java.lang.RuntimeException
 import java.util.*
@@ -46,11 +49,8 @@ class AnsibleConfigurationType : ConfigurationTypeBase(
  *
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
  */
-abstract class AnsibleOptions(ansibleCommand: String) : RunConfigurationOptions() {
+abstract class AnsibleOptions : RunConfigurationOptions() {
     internal var uid by string()
-    internal var command by string(ansibleCommand)
-    internal var configFile by string()
-    internal var virtualEnv by string()
     internal var rawOpts by string()
     internal var workDir by string()
 }
@@ -67,7 +67,7 @@ abstract class AnsibleRunConfiguration<Options : AnsibleOptions>(
     project: Project,
     factory: ConfigurationFactory,
     name: String,
-    private val ansibleCommand: String,
+    val ansibleCommand: String,
 ) :
     RunConfigurationBase<Options>(project, factory, name) {
 
@@ -84,21 +84,6 @@ abstract class AnsibleRunConfiguration<Options : AnsibleOptions>(
         }
         set(value) {
             options.uid = value
-        }
-    internal var command: String
-        get() = options.command ?: ""
-        set(value) {
-            options.command = value.ifBlank { ansibleCommand }
-        }
-    internal var configFile: String
-        get() = options.configFile ?: ""
-        set(value) {
-            options.configFile = value
-        }
-    internal var virtualEnv: String
-        get() = options.virtualEnv ?: ""
-        set(value) {
-            options.virtualEnv = value
         }
     internal var rawOpts: String
         get() = options.rawOpts ?: ""
@@ -156,6 +141,7 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
     CommandLineState(environment) {
 
     protected val logger = Logger.getInstance(this::class.java)
+    private var ansibleSettings = getAnsibleSettings(environment.project)
 
     /**
      * Start the process.
@@ -168,6 +154,12 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      */
     override fun startProcess(): ProcessHandler {
         val command = getCommand().also {
+            if (!ansibleSettings.state.configFile.isNullOrBlank()) {
+                it.withConfigFile(ansibleSettings.state.configFile!!)
+            }
+            if (ansibleSettings.state.installType == InstallType.VIRTUALENV) {
+                it.withPythonVenv(ansibleSettings.state.ansibleLocation ?: "")
+            }
             if (!it.environment.contains("TERM")) {
                 it.environment["TERM"] = "xterm-256color"
             }
@@ -182,7 +174,7 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      *
      * @return command
      */
-    internal abstract fun getCommand(): GeneralCommandLine
+    internal abstract fun getCommand(): CommandLine
 }
 
 
@@ -194,9 +186,6 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
 abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfiguration<Options>> protected constructor() :
     SettingsEditor<Config>() {
 
-    private var command = ""
-    private var configFile = ""
-    private var virtualEnv = ""
     private var rawOpts = ""
     private var workDir = ""
 
@@ -223,19 +212,6 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
      */
     private fun addAnsibleFields(parent: Panel) {
         parent.let {
-            it.row("Ansible command:") {
-                textFieldWithBrowseButton("Ansible Command").bindText(::command)
-            }
-            it.row("Ansible config file:") {
-                textFieldWithBrowseButton("Ansible Config File",
-                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                ).bindText(::configFile)
-            }
-            it.row("Python virtualenv:") {
-                textFieldWithBrowseButton("Python Virtual Environment",
-                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                ).bindText(::virtualEnv)
-            }
             it.row("Raw options:") {
                 expandableTextField().bindText(::rawOpts)
             }
@@ -266,9 +242,6 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
      */
     private fun resetAnsibleOptions(config: Config) {
         config.let {
-            command = it.command
-            configFile = it.configFile
-            virtualEnv = it.virtualEnv
             rawOpts = it.rawOpts
             workDir = it.workDir
         }
@@ -293,9 +266,6 @@ abstract class AnsibleEditor<Options : AnsibleOptions, Config : AnsibleRunConfig
      */
     private fun applyAnsibleOptions(config: Config) {
         config.let {
-            it.command = command
-            it.configFile = configFile
-            it.virtualEnv = virtualEnv
             it.rawOpts = rawOpts
             it.workDir = workDir
         }

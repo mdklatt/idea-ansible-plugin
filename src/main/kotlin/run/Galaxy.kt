@@ -17,7 +17,6 @@ import dev.mdklatt.idea.common.exec.PosixCommandLine
 import kotlinx.serialization.Serializable
 import java.io.FileNotFoundException
 import kotlin.io.path.Path
-import kotlin.io.path.pathString
 
 
 /**
@@ -63,7 +62,7 @@ class GalaxyConfigurationFactory internal constructor(type: ConfigurationType) :
  *
  * @see <a href="https://plugins.jetbrains.com/docs/intellij/run-configurations.html#implement-a-configurationfactory">Run Configurations Tutorial</a>
  */
-class GalaxyOptions : AnsibleOptions("ansible-galaxy") {
+class GalaxyOptions : AnsibleOptions() {
     internal var requirements by string()
     internal var deps by property(true)
     internal var collectionsDir by string()
@@ -187,13 +186,6 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             }
         }
         return command.also {
-            if (config.configFile.isNotBlank()) {
-                it.withConfigFile(config.configFile)
-            }
-            if (config.virtualEnv.isNotBlank()) {
-                val path = Path(config.workDir).resolve(config.virtualEnv)
-                it.withPythonVenv(path.pathString)
-            }
             if (config.workDir.isNotBlank()) {
                 it.withWorkDirectory(config.workDir)
             }
@@ -218,7 +210,7 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             "r" to config.requirements.ifEmpty { null },
         )
         val subcommand = sequenceOf(type, "install").filterNotNull()
-        return PosixCommandLine(config.command, subcommand).also {
+        return PosixCommandLine(config.ansibleCommand, subcommand).also {
             it.addOptions(commonOptions + mapOf("p" to path))
             it.addParameters(CommandLine.splitArguments(config.rawOpts))
         }

@@ -6,8 +6,13 @@ package dev.mdklatt.idea.ansible.run
 import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
+import com.intellij.openapi.components.reloadApplicationState
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.delete
+import dev.mdklatt.idea.ansible.AnsibleSettingsComponent
+import dev.mdklatt.idea.ansible.AnsibleSettingsState
+import dev.mdklatt.idea.ansible.InstallType
+import dev.mdklatt.idea.ansible.getAnsibleSettings
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import org.jdom.Element
@@ -56,7 +61,7 @@ internal class GalaxyConfigurationFactoryTest : BasePlatformTestCase() {
         // Just a smoke test to ensure that the expected RunConfiguration type
         // is returned.
         factory.createTemplateConfiguration(project).let {
-            assertTrue(it.command.isNotBlank())
+            assertEquals("ansible-galaxy", it.ansibleCommand)
         }
     }
 }
@@ -84,14 +89,13 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
      */
     fun testConstructor() {
         config.let {
+            assertEquals("ansible-galaxy", it.ansibleCommand)
             assertTrue(it.uid.isNotBlank())
             assertEquals("", it.requirements)
             assertTrue(it.deps)
             assertEquals("", it.collectionsDir)
             assertEquals("", it.rolesDir)
             assertFalse(it.force)
-            assertEquals("ansible-galaxy", it.command)
-            assertEquals("", it.virtualEnv)
             assertEquals("", it.rawOpts)
             assertEquals("", it.workDir)
         }
@@ -108,9 +112,6 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             it.collectionsDir = "collections"
             it.rolesDir = "roles"
             it.force = true
-            it.command = "/path/to/ansible-galaxy"
-            it.configFile = "/ansible.cfg"
-            it.virtualEnv = "/path/to/venv"
             it.rawOpts = "one \"two\""
             it.workDir = "/path/to/project"
             it.writeExternal(element)
@@ -122,21 +123,8 @@ internal class GalaxyRunConfigurationTest : BasePlatformTestCase() {
             assertEquals(config.collectionsDir, it.collectionsDir)
             assertEquals(config.rolesDir, it.rolesDir)
             assertEquals(config.force, it.force)
-            assertEquals(config.command, it.command)
-            assertEquals(config.configFile, it.configFile)
-            assertEquals(config.virtualEnv, it.virtualEnv)
             assertEquals(config.rawOpts, it.rawOpts)
             assertEquals(config.workDir, it.workDir)
-        }
-    }
-
-    /**
-     * Test the `command` property default value.
-     */
-    fun testCommandDefault() {
-        config.let {
-            it.command = ""
-            assertEquals("ansible-galaxy", it.command)
         }
     }
 }
@@ -172,11 +160,12 @@ internal class GalaxyEditorTest : BasePlatformTestCase() {
 /**
  * Unit tests for the GalaxyCommandLineState class.
  */
-internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
+internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
 
     private var tmpDir: Path? = null
     private lateinit var configuration: GalaxyRunConfiguration
     private lateinit var state: GalaxyCommandLineState
+    private lateinit var ansibleSettings: AnsibleSettingsComponent
 
     /**
      * Per-test initialization.
@@ -189,6 +178,10 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
         val executor = DefaultRunExecutor.getRunExecutorInstance()
         val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
         state = GalaxyCommandLineState(environment)
+        ansibleSettings = getAnsibleSettings(project).also {
+            it.state.installType = InstallType.VIRTUALENV
+            it.state.ansibleLocation = ".venv"
+        }
     }
 
     /**
@@ -196,6 +189,8 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
      */
     override fun tearDown() {
         tmpDir?.delete()
+        ansibleSettings.state.installType = InstallType.SYSTEM
+        ansibleSettings.state.ansibleLocation = ""
         super.tearDown()
     }
 
@@ -235,8 +230,6 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
         // configuration.
         tmpDir = createTempDirectory()
         configuration.let {
-            it.configFile = getTestPath("/ansible.cfg")
-            it.virtualEnv = ".venv"
             it.requirements = getTestPath("/requirements.yml")
             it.rolesDir = tmpDir.toString()
             it.collectionsDir = it.rolesDir
@@ -249,15 +242,5 @@ internal class GalaxyCommandLineStateTest : BasePlatformTestCase() {
             assertTrue(tmpDir!!.resolve("mdklatt.tmpdir").toFile().isDirectory)
             assertTrue(tmpDir!!.resolve("ansible_collections/ansible/posix").toFile().isDirectory)
         }
-    }
-
-    companion object {
-        /**
-         * Get the path to a test resource file.
-         *
-         * @param file: file path relative to the resources directory
-         * @return absolute file path
-         */
-        private fun getTestPath(file: String) = this::class.java.getResource(file)?.path ?: ""
     }
 }
