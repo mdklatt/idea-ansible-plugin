@@ -227,7 +227,8 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
      */
     fun testStartProcess() {
         // Indirectly test protected startProcess() method by executing the
-        // configuration.
+        // configuration. This uses a temporary virtualenv installation (see
+        // AnsibleCommandLineStateTest).
         tmpDir = createTempDirectory()
         configuration.let {
             it.requirements = getTestPath("/requirements.yml")

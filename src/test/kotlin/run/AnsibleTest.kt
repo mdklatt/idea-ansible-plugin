@@ -81,6 +81,8 @@ internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         ansibleSettings = getAnsibleSettings(project).also {
+            // Use a temporary virtualenv installation (see build.gradle.kts)
+            // of Ansible for test execution.
             it.state.installType = InstallType.VIRTUALENV
             it.state.ansibleLocation = ".venv"
         }

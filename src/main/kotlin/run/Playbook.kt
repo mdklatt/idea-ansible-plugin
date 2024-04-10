@@ -312,7 +312,8 @@ class PlaybookCommandLineState internal constructor(environment: ExecutionEnviro
             "tags" to config.tags.joinToString(",").ifEmpty { null },
             "extra-vars" to config.variables.joinToString(" ").ifEmpty { null },
         )
-        return PosixCommandLine(config.ansibleCommand).also {
+        val command = ansibleSettings.resolveAnsiblePath(config.ansibleCommand)
+        return PosixCommandLine(command).also {
             getPassword()?.let { password ->
                 it.withInput(password)
                 options["ask-become-pass"] = true

@@ -141,7 +141,7 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
     CommandLineState(environment) {
 
     protected val logger = Logger.getInstance(this::class.java)
-    private var ansibleSettings = getAnsibleSettings(environment.project)
+    protected val ansibleSettings = getAnsibleSettings(environment.project)
 
     /**
      * Start the process.

@@ -209,8 +209,9 @@ class GalaxyCommandLineState internal constructor(environment: ExecutionEnvironm
             forceOption to config.force,
             "r" to config.requirements.ifEmpty { null },
         )
+        val command = ansibleSettings.resolveAnsiblePath(config.ansibleCommand)
         val subcommand = sequenceOf(type, "install").filterNotNull()
-        return PosixCommandLine(config.ansibleCommand, subcommand).also {
+        return PosixCommandLine(command, subcommand).also {
             it.addOptions(commonOptions + mapOf("p" to path))
             it.addParameters(CommandLine.splitArguments(config.rawOpts))
         }

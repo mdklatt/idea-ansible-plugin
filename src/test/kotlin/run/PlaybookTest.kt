@@ -215,7 +215,9 @@ internal class PlaybookCommandLineStateTest : AnsibleCommandLineStateTest() {
      * Test the createProcess() method.
      */
     fun testCreateProcess() {
-        // Indirectly test createProcess() by executing the configuration.
+        // Indirectly test protected startProcess() method by executing the
+        // configuration. This uses a temporary virtualenv installation (see
+        // AnsibleCommandLineStateTest).
         val env = state.environment
         state.execute(env.executor, env.runner).processHandler.let {
             it.startNotify()
