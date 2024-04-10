@@ -38,19 +38,39 @@ internal class AnsibleSettingsStateTest : BasePlatformTestCase() {
     }
 
     /**
-     * Test the `ansibleLocation` property.
-     */
-    fun testConfigFile() {
-        assertEquals(state.configFile, null)
-    }
-
-    /**
-     * Test the `ansibleLocation` property.
+     * Test the `installType` property.
      */
     fun testInstallType() {
         assertEquals(state.installType, InstallType.SYSTEM)
         state.installType = InstallType.VIRTUALENV
         assertEquals(InstallType.VIRTUALENV, state.installType)
+    }
+
+    /**
+     * Test the `configFile` property.
+     */
+    fun testConfigFile() {
+        assertEquals(null, state.configFile)
+    }
+
+    /**
+     * Test the `dockerImage` property.
+     */
+    fun testDockerImage() {
+        assertEquals(null, state.dockerImage)
+        val image = "ansible:latest"
+        state.dockerImage = image
+        assertEquals(image, state.dockerImage)
+    }
+
+    /**
+     * Test the `dockerExe` property.
+     */
+    fun testDockerExe() {
+        assertEquals("docker", state.dockerExe)
+        val docker = "/usr/local/bin/docker"
+        state.dockerExe = docker
+        assertEquals(docker, state.dockerExe)
     }
 }
 
@@ -99,15 +119,6 @@ internal class AnsibleSettingsComponentTest: BasePlatformTestCase() {
         settings.state.installType = InstallType.VIRTUALENV
         settings.state.ansibleLocation = "venv"
         assertEquals("abc", settings.resolveAnsiblePath("abc"))
-    }
-
-    /**
-     * Test the `ansibleResolvePath()` method for a Docker container.
-     */
-    fun testResolveAnsiblePathDocker() {
-        settings.state.installType = InstallType.DOCKER
-        settings.state.ansibleLocation = "/usr/bin/ansible"
-        assertEquals("/usr/bin/abc", settings.resolveAnsiblePath("abc"))
     }
 }
 

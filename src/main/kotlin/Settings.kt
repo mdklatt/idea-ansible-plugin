@@ -8,8 +8,10 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.UiDslUnnamedConfigurable
 import com.intellij.openapi.project.Project
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.layout.ComponentPredicate
+import com.intellij.ui.layout.selected
 import com.intellij.ui.layout.selectedValueMatches
 import dev.mdklatt.idea.common.map.findFirstKey
 import kotlin.io.path.Path
@@ -21,7 +23,7 @@ import kotlin.io.path.Path
 /**
  * Python execution target types.
  */
-enum class InstallType { SYSTEM, VIRTUALENV, DOCKER }
+enum class InstallType { SYSTEM, VIRTUALENV }
 
 
 /**
@@ -37,6 +39,8 @@ class AnsibleSettingsState : BaseState() {
     var configFile by string()
     var installType by enum(InstallType.SYSTEM)
     var ansibleLocation by string("ansible")
+    var dockerExe by string("docker")
+    var dockerImage by string()
 }
 
 
@@ -54,7 +58,7 @@ class AnsibleSettingsComponent: SimplePersistentStateComponent<AnsibleSettingsSt
      */
     fun resolveAnsiblePath(command: String): String {
         return when (state.installType) {
-            InstallType.SYSTEM, InstallType.DOCKER -> {
+            InstallType.SYSTEM -> {
                 Path(state.ansibleLocation ?: "ansible").parent?.resolve(command)?.toString() ?: command
             }
             InstallType.VIRTUALENV -> {
@@ -76,7 +80,6 @@ class AnsibleSettingsConfigurable(project: Project): UiDslUnnamedConfigurable.Si
     private val installTypeOptions = mapOf(
         InstallType.SYSTEM to "Ansible executable:",
         InstallType.VIRTUALENV to "Python virtualenv:",
-        InstallType.DOCKER to "Docker image:",
     )
 
     // Need local versions of settings to bind to UI widgets  for some unknown
@@ -102,62 +105,95 @@ class AnsibleSettingsConfigurable(project: Project): UiDslUnnamedConfigurable.Si
             settings.state.configFile = value
         }
 
+    private var dockerImage: String
+        get() = settings.state.dockerImage ?: ""
+        set(value) {
+            settings.state.dockerImage = value
+        }
+
+    private var dockerExe: String
+        get() = settings.state.dockerImage ?: ""
+        set(value) {
+            settings.state.dockerImage = value
+        }
+
+
     /**
      * Create the UI component for defining settings.
      */
     override fun Panel.createContent() {
-        row {
-            val installTypeField = comboBox(installTypeOptions.values).let {
-                it.bindItem(
-                    getter = { installTypeOptions[installType] },
-                    setter = { installType = installTypeOptions.findFirstKey(it)!! }
-                )
+
+        group("Ansible Settings") {
+            row {
+                val installTypeField = comboBox(installTypeOptions.values).let {
+                    it.bindItem(
+                        getter = { installTypeOptions[installType] },
+                        setter = { installType = installTypeOptions.findFirstKey(it)!! }
+                    )
+                }
+
+                // The selected install type determines the context of the location
+                // value, e.g. VIRTUALENV should be a directory path. A separate
+                // field is created for each type, and then `visibleIf()` is used
+                // to dynamically enable the appropriate field.
+                // <https://intellij-support.jetbrains.com/hc/en-us/community/posts/18137418810514/comments/18230412046226>
+
+                /**
+                 * Return a predicate to match against the selected install type.
+                 *
+                 * @param installType desired type
+                 * @return predicate object
+                 */
+                fun isInstallType(installType: InstallType): ComponentPredicate {
+                    val comboBox = installTypeField.component
+                    return comboBox.selectedValueMatches { it == installTypeOptions[installType] }
+                }
+
+                textFieldWithBrowseButton(
+                    "Ansible Executable",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
+                ).let {
+                    it.bindText(::ansibleLocation)
+                    it.visibleIf(isInstallType(InstallType.SYSTEM))
+                }
+
+                textFieldWithBrowseButton(
+                    "Python Virtualenv",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+                ).let {
+                    it.bindText(::ansibleLocation)
+                    it.visibleIf(isInstallType(InstallType.VIRTUALENV))
+                }
+
             }
 
-            // The selected install type determines the context of the location
-            // value, e.g. VIRTUALENV should be a directory path. A separate
-            // field is created for each type, and then `visibleIf()` is used
-            // to dynamically enable the appropriate field.
-            // <https://intellij-support.jetbrains.com/hc/en-us/community/posts/18137418810514/comments/18230412046226>
-
-            /**
-             * Return a predicate to match against the selected install type.
-             *
-             * @param installType desired type
-             * @return predicate object
-             */
-            fun isInstallType(installType: InstallType): ComponentPredicate {
-                val comboBox = installTypeField.component
-                return comboBox.selectedValueMatches { it == installTypeOptions[installType] }
-            }
-
-            textFieldWithBrowseButton(
-                "Ansible Executable",
-                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
-            ).let {
-                it.bindText(::ansibleLocation)
-                it.visibleIf(isInstallType(InstallType.SYSTEM))
-            }
-
-            textFieldWithBrowseButton(
-                "Python Virtualenv",
-                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-            ).let {
-                it.bindText(::ansibleLocation)
-                it.visibleIf(isInstallType(InstallType.VIRTUALENV))
-            }
-
-            textField().let {
-                it.bindText(::ansibleLocation)
-                it.visibleIf(isInstallType(InstallType.DOCKER))
+            row {
+                textFieldWithBrowseButton(
+                    "Ansible Config File",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
+                ).let {
+                    it.label("Config file:")
+                    it.bindText(::configFile)
+                }
             }
         }
 
-        row("Config file:") {
-            textFieldWithBrowseButton(
-                "Ansible Config File",
-                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
-            ).bindText(::configFile)
+        collapsibleGroup("Docker Settings") {
+            row {
+                textField().let{
+                    it.label("Docker image:")
+                    it.bindText(::dockerImage)
+                }
+            }
+            row {
+                textFieldWithBrowseButton(
+                    "Docker Executable",
+                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
+                ).let {
+                    it.label("Docker executable:")
+                    it.bindText(::dockerExe)
+                }
+            }
         }
     }
 

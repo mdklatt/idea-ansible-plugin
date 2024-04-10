@@ -6,11 +6,9 @@ package dev.mdklatt.idea.ansible.run
 import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
-import com.intellij.openapi.components.reloadApplicationState
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.delete
 import dev.mdklatt.idea.ansible.AnsibleSettingsComponent
-import dev.mdklatt.idea.ansible.AnsibleSettingsState
 import dev.mdklatt.idea.ansible.InstallType
 import dev.mdklatt.idea.ansible.getAnsibleSettings
 import java.nio.file.Path

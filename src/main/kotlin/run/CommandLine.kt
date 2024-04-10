@@ -46,3 +46,12 @@ internal fun CommandLine.withConfigFile(configPath: String): CommandLine {
     ))
     return this
 }
+
+
+/**
+ * Convert command to a `docker run` command.
+ */
+internal fun CommandLine.asDockerRun(image: String, dockerExe: String? = null): CommandLine {
+    // TODO: "dockerExe run --rm -v workingDir:/tmp/ansible -w /tmp/ansible  [-e <get from this.environment>] dockerImage ..."
+    TODO("Docker execution not implemented")
+}
