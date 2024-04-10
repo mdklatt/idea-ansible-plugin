@@ -112,6 +112,9 @@ internal class AnsibleSettingsComponentTest: BasePlatformTestCase() {
 }
 
 
+/**
+ * Unit tests for the AnsibleSettingsConfigurable class.
+ */
 internal class AnsibleSettingsConfigurableTest : BasePlatformTestCase() {
 
     private lateinit var configurable: AnsibleSettingsConfigurable

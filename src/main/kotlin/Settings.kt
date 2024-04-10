@@ -9,6 +9,8 @@ import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.UiDslUnnamedConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.layout.ComponentPredicate
+import com.intellij.ui.layout.selectedValueMatches
 import dev.mdklatt.idea.common.map.findFirstKey
 import kotlin.io.path.Path
 
@@ -105,34 +107,52 @@ class AnsibleSettingsConfigurable(project: Project): UiDslUnnamedConfigurable.Si
      */
     override fun Panel.createContent() {
         row {
-            comboBox(installTypeOptions.values).let {
+            val installTypeField = comboBox(installTypeOptions.values).let {
                 it.bindItem(
                     getter = { installTypeOptions[installType] },
                     setter = { installType = installTypeOptions.findFirstKey(it)!! }
                 )
-                it.onChanged {
-                    // Various attempts to implement this have failed, such as
-                    // reassigning the value of locationField (see below),
-                    // calling createContent() on the parent component, and
-                    // removing locationField before createLocationField() is
-                    // called.
-
-                    // Update the location input field to reflect the new
-                    // install type. Cannot use `installType` property here
-                    // because changes have not been applied yet.
-                    // TODO: Would that it were this simple, but it is not.
-                    //val newInstallType = installTypeOptions.findFirstKey(it.selectedItem)!!
-                    //locationField = createLocationField(newInstallType)
-                }
             }
 
-            // This should be a dynamic field based on the install type, but
-            // attempts to update this dynamically when installType changes
-            // have not been successful (see above). For now, use the least
-            // common denominator, a plain text field.
-            // TODO: createLocationField(this, installType)
-            textField().bindText(::ansibleLocation)
+            // The selected install type determines the context of the location
+            // value, e.g. VIRTUALENV should be a directory path. A separate
+            // field is created for each type, and then `visibleIf()` is used
+            // to dynamically enable the appropriate field.
+            // <https://intellij-support.jetbrains.com/hc/en-us/community/posts/18137418810514/comments/18230412046226>
+
+            /**
+             * Return a predicate to match against the selected install type.
+             *
+             * @param installType desired type
+             * @return predicate object
+             */
+            fun isInstallType(installType: InstallType): ComponentPredicate {
+                val comboBox = installTypeField.component
+                return comboBox.selectedValueMatches { it == installTypeOptions[installType] }
+            }
+
+            textFieldWithBrowseButton(
+                "Ansible Executable",
+                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
+            ).let {
+                it.bindText(::ansibleLocation)
+                it.visibleIf(isInstallType(InstallType.SYSTEM))
+            }
+
+            textFieldWithBrowseButton(
+                "Python Virtualenv",
+                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+            ).let {
+                it.bindText(::ansibleLocation)
+                it.visibleIf(isInstallType(InstallType.VIRTUALENV))
+            }
+
+            textField().let {
+                it.bindText(::ansibleLocation)
+                it.visibleIf(isInstallType(InstallType.DOCKER))
+            }
         }
+
         row("Config file:") {
             textFieldWithBrowseButton(
                 "Ansible Config File",
@@ -146,26 +166,4 @@ class AnsibleSettingsConfigurable(project: Project): UiDslUnnamedConfigurable.Si
      */
     // TODO: Where exactly is this used, because the IDE uses the name in plugin.xml.
     override fun getDisplayName() = "Ansible"
-
-    /**
-     * Create the input component for the Ansible location field.
-     *
-     * @param row: row containing the field
-     * @param installType: installation type
-     */
-    private fun createLocationField(row: Row, installType: InstallType): Cell<*> {
-        return when (installType) {
-            InstallType.SYSTEM -> row.textFieldWithBrowseButton(
-                "Ansible Executable",
-                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
-            ).bindText(::ansibleLocation)
-
-            InstallType.VIRTUALENV -> row.textFieldWithBrowseButton(
-                "Python Virtualenv",
-                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-            ).bindText(::ansibleLocation)
-
-            InstallType.DOCKER -> row.textField().bindText(::ansibleLocation)
-        }
-    }
 }
