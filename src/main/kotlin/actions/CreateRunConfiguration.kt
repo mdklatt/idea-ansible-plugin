@@ -31,18 +31,21 @@ class CreateGalaxyConfiguration: AnAction() {
      */
     override fun actionPerformed(event: AnActionEvent) {
         val file = event.getData(CommonDataKeys.PSI_FILE)?.containingFile
-        val path = file?.virtualFile?.canonicalPath
-        if (file?.fileType is YAMLFileType && path != null) {
-            // TODO: Need better testing that this is a playbook.
-            createConfiguration(event.project, Path(path))
-        } else {
+        val path = file?.virtualFile?.canonicalPath ?: return
+        if (file.fileType !is YAMLFileType) {
+            // Do not make this fatal because file type detection is brittle.
+            // It depends on the user's IDE setup, including any plugins which
+            // might hijack the YAML file type.
+            // TODO: Need better validation that this is a requirements file.
+            logger.warn("$path does not appear to be a valid requirements file")
             Messages.showMessageDialog(
                 event.project,
-                "Not a valid requirements file",
+                "Does not appear to be a valid requirements file",
                 event.presentation.text,
-                Messages.getErrorIcon()
+                Messages.getWarningIcon()
             )
         }
+        createConfiguration(event.project, Path(path))
     }
 
     /**
@@ -110,18 +113,21 @@ class CreatePlaybookConfiguration: AnAction() {
      */
     override fun actionPerformed(event: AnActionEvent) {
         val file = event.getData(CommonDataKeys.PSI_FILE)?.containingFile
-        val path = file?.virtualFile?.canonicalPath
-        if (file?.fileType is YAMLFileType && path != null) {
-            // TODO: Need better testing that this is a playbook.
-            createConfiguration(event.project, Path(path))
-        } else {
+        val path = file?.virtualFile?.canonicalPath ?: return
+        if (file.fileType !is YAMLFileType) {
+            // Do not make this fatal because file type detection is brittle.
+            // It depends on the user's IDE setup, including any plugins which
+            // might hijack the YAML file type.
+            // TODO: Need better validation that this is a playbook.
+            logger.warn("$path does not appear to be a valid playbook file")
             Messages.showMessageDialog(
                 event.project,
-                "Not a valid playbook file",
+                "Does not appear to be a valid playbook file",
                 event.presentation.text,
-                Messages.getErrorIcon()
+                Messages.getWarningIcon()
             )
         }
+        createConfiguration(event.project, Path(path))
     }
 
     /**
