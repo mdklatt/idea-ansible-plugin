@@ -18,7 +18,7 @@ import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.dsl.builder.*
 import dev.mdklatt.idea.ansible.InstallType
 import dev.mdklatt.idea.ansible.getAnsibleSettings
-import dev.mdklatt.idea.common.exec.CommandLine
+import dev.mdklatt.idea.common.exec.PosixCommandLine
 import org.jdom.Element
 import java.lang.RuntimeException
 import java.util.*
@@ -174,7 +174,7 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      *
      * @return command
      */
-    internal abstract fun getCommand(): CommandLine
+    internal abstract fun getCommand(): PosixCommandLine
 }
 
 

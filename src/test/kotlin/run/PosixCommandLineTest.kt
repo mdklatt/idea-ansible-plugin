@@ -1,11 +1,11 @@
 /**
- * Unit tests for CommandLine.kt.
+ * Unit tests for PosixCommandLine.kt.
  */
 package dev.mdklatt.idea.ansible.run
 
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import dev.mdklatt.idea.common.exec.CommandLine
+import dev.mdklatt.idea.common.exec.PosixCommandLine
 
 
 // The IDEA platform tests use JUnit3, so method names are used to determine
@@ -18,16 +18,16 @@ import dev.mdklatt.idea.common.exec.CommandLine
 /**
  * Unit tests for the CommandLine class.
  */
-internal class CommandLineTest : BasePlatformTestCase() {
+internal class PosixCommandLineTest : BasePlatformTestCase() {
 
-    private lateinit var command: CommandLine
+    private lateinit var command: PosixCommandLine
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
-        command = CommandLine("ansible", "--version")
+        command = PosixCommandLine("ansible", "--version")
     }
 
     /**
