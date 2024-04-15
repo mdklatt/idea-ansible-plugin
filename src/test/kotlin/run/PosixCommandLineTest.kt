@@ -54,4 +54,22 @@ internal class PosixCommandLineTest : BasePlatformTestCase() {
         assertTrue(command == command.withConfigFile(configPath))
         assertEquals(configPath, command.environment["ANSIBLE_CONFIG"])
     }
+
+    /**
+     * Test the asDockerRun() method.
+     */
+    fun testAsDockerRun() {
+        val docker = "/usr/local/bin/docker"
+        val image = "ansible:latest"
+        val dockerCommand = command.also {
+            it.withEnvironment("ENV", "VALUE")
+        }.asDockerRun(image, "/home/project", "venv", docker)
+        assertEquals(docker, dockerCommand.exePath)
+        dockerCommand.commandLineString.let {
+            assertTrue(it.contains("--env ENV=VALUE"))
+            assertTrue(it.contains("--env PATH=venv/bin:\$PATH"))
+            assertTrue(it.contains("--entrypoint ansible"))
+            assertTrue(it.endsWith("$image --version"))
+        }
+    }
 }
