@@ -56,7 +56,7 @@ internal fun PosixCommandLine.withConfigFile(configPath: String): PosixCommandLi
  * @param dockerExe: local Docker executable
  * @param venvPath: remote Python virtualenv directory
  */
-internal fun PosixCommandLine.asDockerRun(image: String, workDir: String, venvPath: String? = null, dockerExe: String = "docker"): PosixCommandLine {
+internal fun PosixCommandLine.asDockerRun(image: String, venvPath: String? = null, dockerExe: String?): PosixCommandLine {
     val dockerEnv = environment.toMutableMap()
     if (venvPath != null) {
         // This needs to be done independently of withPythonVenv(), which
@@ -67,15 +67,16 @@ internal fun PosixCommandLine.asDockerRun(image: String, workDir: String, venvPa
         dockerEnv["PATH"] = "${path}:\$PATH"
         dockerEnv["PYTHONHOME"] = "\$PYTHONHOME"
     }
+    val localWorkDir = workDirectory?.path ?: ""
     val remoteWorkDir = "/tmp/ansible"  // TODO: configurable
     val dockerOpts = mapOf<String, Any>(
         "rm" to true,
-        "env" to dockerEnv.entries.map { (name, value) -> "${name}=${value}" },
+        "env" to dockerEnv.entries.map { (name, value) -> "${name}='${value}'" },
         "workdir" to remoteWorkDir,
-        "volume" to "${workDir}:/tmp/ansible",
+        "volume" to "${localWorkDir}:${remoteWorkDir}",
         "entrypoint" to exePath
     )
-    val dockerCommand = PosixCommandLine(dockerExe, "run").also {
+    val dockerCommand = PosixCommandLine(dockerExe ?: "docker", "run").also {
         it.addOptions(dockerOpts)
         it.addParameters(image)
         it.addParameters(*parametersList.list.toTypedArray())
