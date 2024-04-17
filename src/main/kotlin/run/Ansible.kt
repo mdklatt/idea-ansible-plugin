@@ -153,16 +153,28 @@ abstract class AnsibleCommandLineState internal constructor(environment: Executi
      * @see com.intellij.execution.process.OSProcessHandler
      */
     override fun startProcess(): ProcessHandler {
-        val command = getCommand().also {
+        var command = getCommand().also {
             if (!ansibleSettings.state.configFile.isNullOrBlank()) {
                 it.withConfigFile(ansibleSettings.state.configFile!!)
             }
             if (ansibleSettings.state.installType == InstallType.VIRTUALENV) {
                 it.withPythonVenv(ansibleSettings.state.ansibleLocation ?: "")
             }
-            if (!it.environment.contains("TERM")) {
-                it.environment["TERM"] = "xterm-256color"
+        }
+        if (ansibleSettings.state.dockerImage != null) {
+            val venvPath = if (ansibleSettings.state.installType == InstallType.VIRTUALENV) {
+                // In this case, variables already defined by withPythonVenv()
+                // will be replaced.
+                ansibleSettings.state.ansibleLocation
+            } else {
+                null
             }
+            command = command.asDockerRun(ansibleSettings.state.dockerImage!!, venvPath, ansibleSettings.state.dockerExe)
+        }
+        if (!command.environment.contains("TERM")) {
+            // This should always be set in the local execution environment,
+            // and needs to be defined after a possible call to asDockerRun().
+            command.environment["TERM"] = "xterm-256color"
         }
         return KillableColoredProcessHandler(command).also {
             ProcessTerminatedListener.attach(it, environment.project)

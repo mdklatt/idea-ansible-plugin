@@ -51,6 +51,11 @@ internal fun PosixCommandLine.withConfigFile(configPath: String): PosixCommandLi
 /**
  * Convert command to a `docker run` command.
  *
+ * The command's currently defined environment will be passed into the Docker
+ * container. Environment variables that should be applied to local `docker`
+ * execution need to be defined on the return value of this method.
+ *
+ * on the result of this
  * @param image: Docker image name
  * @param workDir: local working directory
  * @param dockerExe: local Docker executable
@@ -67,7 +72,7 @@ internal fun PosixCommandLine.asDockerRun(image: String, venvPath: String? = nul
         dockerEnv["PATH"] = "${path}:\$PATH"
         dockerEnv["PYTHONHOME"] = "\$PYTHONHOME"
     }
-    val localWorkDir = workDirectory?.path ?: ""
+    val localWorkDir = Path(workDirectory?.path ?: "").toAbsolutePath()
     val remoteWorkDir = "/tmp/ansible"  // TODO: configurable
     val dockerOpts = mapOf<String, Any>(
         "rm" to true,

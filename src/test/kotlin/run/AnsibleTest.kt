@@ -85,6 +85,7 @@ internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
             // of Ansible for test execution.
             it.state.installType = InstallType.VIRTUALENV
             it.state.ansibleLocation = ".venv"
+            //it.state.dockerImage = "ansible:image"  // FAIL
         }
     }
 
@@ -92,7 +93,7 @@ internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
      * Per-test cleanup.
      */
     override fun tearDown() {
-        ansibleSettings.loadState(AnsibleSettingsState())
+        ansibleSettings.loadState(AnsibleSettingsState())  // reset to defaults
         super.tearDown()
     }
 
