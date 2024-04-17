@@ -8,10 +8,8 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.options.UiDslUnnamedConfigurable
 import com.intellij.openapi.project.Project
-import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.layout.ComponentPredicate
-import com.intellij.ui.layout.selected
 import com.intellij.ui.layout.selectedValueMatches
 import dev.mdklatt.idea.common.map.findFirstKey
 import kotlin.io.path.Path
@@ -112,9 +110,9 @@ class AnsibleSettingsConfigurable(project: Project): UiDslUnnamedConfigurable.Si
         }
 
     private var dockerExe: String
-        get() = settings.state.dockerImage ?: ""
+        get() = settings.state.dockerExe ?: ""
         set(value) {
-            settings.state.dockerImage = value
+            settings.state.dockerExe = value
         }
 
 

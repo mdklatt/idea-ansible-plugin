@@ -91,7 +91,7 @@ internal class AnsibleSettingsComponentTest: BasePlatformTestCase() {
      * Per-test cleanup.
      */
     override fun tearDown() {
-        settings.loadState(AnsibleSettingsState())
+        settings.loadState(AnsibleSettingsState())  // reset to default
         super.tearDown()
     }
 
