@@ -91,6 +91,10 @@ dependencies {
     // JUnit3 is required for running IDEA platform tests.
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+
+    implementation(platform("org.testcontainers:testcontainers-bom:1.19.7"))
+    testImplementation("org.testcontainers:testcontainers:1.19.7")
+    testImplementation("org.testcontainers:junit-jupiter:1.19.7")
 }
 
 

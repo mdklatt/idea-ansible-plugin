@@ -3,14 +3,19 @@
  */
 package dev.mdklatt.idea.ansible.run
 
+import com.intellij.openapi.util.io.toNioPath
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.mdklatt.idea.ansible.AnsibleSettingsComponent
 import dev.mdklatt.idea.ansible.AnsibleSettingsState
 import dev.mdklatt.idea.ansible.InstallType
 import dev.mdklatt.idea.ansible.getAnsibleSettings
+import org.testcontainers.containers.GenericContainer
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
+import org.testcontainers.images.builder.ImageFromDockerfile
+import org.testcontainers.utility.DockerImageName
+import java.nio.file.Paths
 
 
 /**
@@ -85,7 +90,6 @@ internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
             // of Ansible for test execution.
             it.state.installType = InstallType.VIRTUALENV
             it.state.ansibleLocation = ".venv"
-            //it.state.dockerImage = "ansible:image"  // FAIL
         }
     }
 
@@ -98,6 +102,28 @@ internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
     }
 
     internal companion object {
+        val ansibleVenv = "/opt/ansible"
+        val ansibleImage by lazy {
+            // There does not seem to be a way to invoke the image builder
+            // directly, so instantiating a container with it seems to be the
+            // only way to get a built image. It is not necessary to actually
+            // start the container.
+            val builder = ImageFromDockerfile().also {
+                // It should be possible to build the image from a Dockerfile,
+                // but this method does not work. Testcontainers documentation
+                // isn't very helpful.
+                // TODO: it.withDockerfile(getTestPath("Dockerfile").toNioPath())
+                it.withDockerfileFromBuilder { builder ->
+                    builder.from("linuxserver/openssh-server:version-9.3_p2-r0")
+                    builder.run("apk add gcc libffi-dev musl-dev python3 python3-dev")
+                    builder.run("python3 -m venv $ansibleVenv")
+                    builder.run(". ${ansibleVenv}/bin/activate && python3 -m pip install ansible==6.1.0")
+                    builder.build()
+                }
+            }
+            GenericContainer(builder).dockerImageName
+        }
+
         /**
          * Get the path to a test resource file.
          *

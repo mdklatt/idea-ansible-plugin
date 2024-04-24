@@ -23,11 +23,10 @@ internal fun PosixCommandLine.withPythonVenv(venvPath: String): PosixCommandLine
     val venv = Path(venvPath).toAbsolutePath()
     val path = venv.resolve("bin")
     val pathEnv = environment["PATH"] ?: System.getenv("PATH")
-    val homeEnv = environment["PYTHONHOME"] ?: System.getenv("PYTHONHOME")
     withEnvironment(mapOf<String, Any?>(
         "VIRTUAL_ENV" to venv.pathString,
         "PATH" to listOf(path.pathString, pathEnv).joinToString(File.pathSeparator),
-        "PYTHONHOME" to if (homeEnv != null) "" else null,  // null to ignore
+        "PYTHONHOME" to ""  // unset
     ))
     return this
 }
@@ -70,7 +69,7 @@ internal fun PosixCommandLine.asDockerRun(image: String, venvPath: String? = nul
         val path = venv.resolve("bin")
         dockerEnv["VIRTUAL_ENV"] = venv.toString()
         dockerEnv["PATH"] = "${path}:\$PATH"
-        dockerEnv["PYTHONHOME"] = "\$PYTHONHOME"
+        dockerEnv["PYTHONHOME"] = ""  // unset
     }
     val localWorkDir = Path(workDirectory?.path ?: "").toAbsolutePath()
     val remoteWorkDir = "/tmp/ansible"  // TODO: configurable
