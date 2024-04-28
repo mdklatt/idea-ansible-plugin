@@ -26,7 +26,7 @@ internal fun PosixCommandLine.withPythonVenv(venvPath: String): PosixCommandLine
     withEnvironment(mapOf<String, Any?>(
         "VIRTUAL_ENV" to venv.pathString,
         "PATH" to listOf(path.pathString, pathEnv).joinToString(File.pathSeparator),
-        "PYTHONHOME" to ""  // unset
+        "PYTHONHOME" to "",  // unset
     ))
     return this
 }
@@ -69,21 +69,32 @@ internal fun PosixCommandLine.asDockerRun(image: String, venvPath: String? = nul
         val path = venv.resolve("bin")
         dockerEnv["VIRTUAL_ENV"] = venv.toString()
         dockerEnv["PATH"] = "${path}:\$PATH"
-        dockerEnv["PYTHONHOME"] = ""  // unset
+        dockerEnv["PYTHONHOME"] to ""  // unset
+    }
+    val containerCommand = if (dockerEnv.contains("PATH")) {
+        // For some reason, using `docker --env PATH=...` results in a strange
+        // temporary directory permission error when attempting to execute
+        // Ansible in a virtualenv, so define $PATH in the container command.
+        val path = dockerEnv.remove("PATH")
+        val exportCommand = PosixCommandLine("export", "PATH=${path}")
+        PosixCommandLine.andCommands(exportCommand, this)
+    } else {
+        this
     }
     val localWorkDir = Path(workDirectory?.path ?: "").toAbsolutePath()
     val remoteWorkDir = "/tmp/ansible"  // TODO: configurable
     val dockerOpts = mapOf<String, Any>(
         "rm" to true,
-        "env" to dockerEnv.entries.map { (name, value) -> "${name}='${value}'" },
         "workdir" to remoteWorkDir,
         "volume" to "${localWorkDir}:${remoteWorkDir}",
-        "entrypoint" to exePath
+        "env" to dockerEnv.map { "${it.key}=${it.value}" },
+        "entrypoint" to containerCommand.exePath
     )
+    val params = containerCommand.parametersList.list.asSequence()
     val dockerCommand = PosixCommandLine(dockerExe ?: "docker", "run").also {
         it.addOptions(dockerOpts)
         it.addParameters(image)
-        it.addParameters(*parametersList.list.toTypedArray())
+        it.addParameters(params)
     }
     return dockerCommand
 }

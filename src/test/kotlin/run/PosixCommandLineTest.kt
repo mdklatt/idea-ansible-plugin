@@ -67,10 +67,10 @@ internal class PosixCommandLineTest : BasePlatformTestCase() {
         }.asDockerRun(image, "venv", docker)
         assertEquals(docker, dockerCommand.exePath)
         dockerCommand.commandLineString.let {
-            assertTrue(it.contains("--env ENV='VALUE'"))
-            assertTrue(it.contains("--env PATH='venv/bin:\$PATH'"))
-            assertTrue(it.contains("--entrypoint ansible"))
-            assertTrue(it.endsWith("$image --version"))
+            assertTrue(it.contains("--entrypoint sh"))
+            assertTrue(it.contains("--env ENV=VALUE"))
+            assertTrue(it.contains("export PATH=venv/bin:\$PATH"))
+            assertTrue(it.contains("&& ansible --version"))
         }
     }
 }
