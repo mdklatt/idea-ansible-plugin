@@ -14,6 +14,7 @@ import dev.mdklatt.idea.ansible.getAnsibleSettings
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import org.jdom.Element
+import kotlin.io.path.Path
 
 
 // The IDEA platform tests use JUnit3, so method names are used to determine
@@ -160,6 +161,7 @@ internal class GalaxyEditorTest : BasePlatformTestCase() {
  */
 internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
 
+    private var requirements = "requirements.yml"
     private var tmpDir: Path? = null
     private lateinit var configuration: GalaxyRunConfiguration
     private lateinit var state: GalaxyCommandLineState
@@ -170,16 +172,16 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
      */
     override fun setUp() {
         super.setUp()
+        ansibleSettings = getAnsibleSettings(project)
         val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
-        val runConfig = RunManager.getInstance(project).createConfiguration("Galaxy Test", factory)
-        configuration = (runConfig.configuration as GalaxyRunConfiguration)
-        val executor = DefaultRunExecutor.getRunExecutorInstance()
-        val environment = ExecutionEnvironmentBuilder.create(executor, runConfig).build()
-        state = GalaxyCommandLineState(environment)
-        ansibleSettings = getAnsibleSettings(project).also {
-            it.state.installType = InstallType.VIRTUALENV
-            it.state.ansibleLocation = ".venv"
+        val settings = RunManager.getInstance(project).createConfiguration("Galaxy Test", factory)
+        configuration = (settings.configuration as GalaxyRunConfiguration).also {
+            it.requirements = requirements
+            it.workDir = Path(getTestPath("/${it.requirements}")).parent.toString()
         }
+        val executor = DefaultRunExecutor.getRunExecutorInstance()
+        val environment = ExecutionEnvironmentBuilder.create(executor, settings).build()
+        state = GalaxyCommandLineState(environment)
     }
 
     /**
@@ -187,8 +189,12 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
      */
     override fun tearDown() {
         tmpDir?.delete()
-        ansibleSettings.state.installType = InstallType.SYSTEM
-        ansibleSettings.state.ansibleLocation = ""
+        ansibleSettings.state.let {
+            // Restore defaults.
+            it.installType = InstallType.SYSTEM
+            it.ansibleLocation = ""
+            it.dockerImage = null
+        }
         super.tearDown()
     }
 
@@ -197,10 +203,9 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
      */
     fun testGetCommandDefaultDirs() {
         configuration.let {
-            it.requirements = "requirements.txt"
             it.force = true
         }
-        val command = "ansible-galaxy install --force-with-deps -r requirements.txt"
+        val command = "ansible-galaxy install --force-with-deps -r ${requirements}"
         assertEquals(command, state.getCommand().commandLineString)
     }
 
@@ -208,11 +213,9 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
      * Test the getCommand() method for non-default install directories.
      */
     fun testGetCommandCustomDirs() {
-        val requirements = getTestPath("/requirements.yml")
         configuration.let {
             it.collectionsDir = "abc"
             it.rolesDir = "xyz"
-            it.requirements = getTestPath("/requirements.yml")
         }
         val command = "sh -c \"" +
             "ansible-galaxy collection install -r $requirements -p abc && " +
@@ -221,15 +224,17 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
     }
 
     /**
-     * Test the startProcess() method.
+     * Test local execution.
      */
-    fun testStartProcess() {
-        // Indirectly test protected startProcess() method by executing the
-        // configuration. This uses a temporary virtualenv installation (see
+    fun testExecLocal() {
+        // This uses a temporary virtualenv installation (see
         // AnsibleCommandLineStateTest).
+        ansibleSettings.state.also {
+            it.installType = InstallType.VIRTUALENV
+            it.ansibleLocation = ".venv"
+        }
         tmpDir = createTempDirectory()
         configuration.let {
-            it.requirements = getTestPath("/requirements.yml")
             it.rolesDir = tmpDir.toString()
             it.collectionsDir = it.rolesDir
         }
@@ -238,8 +243,56 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
             it.startNotify()
             it.waitFor()
             assertEquals(0, it.exitCode)
-            assertTrue(tmpDir!!.resolve("mdklatt.tmpdir").toFile().isDirectory)
-            assertTrue(tmpDir!!.resolve("ansible_collections/ansible/posix").toFile().isDirectory)
+        }
+        assertTrue(tmpDir!!.resolve("mdklatt.tmpdir").toFile().isDirectory)
+        assertTrue(tmpDir!!.resolve("ansible_collections/ansible/posix").toFile().isDirectory)
+    }
+
+    /**
+     * Test Docker execution.
+     */
+    fun testExecDocker() {
+        // Installed dependencies are local to the container here, so just make
+        // sure that execution didn't fail; `testExecLocal` verifies that
+        // dependencies are actually installed.
+        ansibleSettings.state.let {
+            it.dockerImage = ansibleImage
+            it.installType = InstallType.SYSTEM
+            it.ansibleLocation = "/opt/ansible/bin/ansible"
+        }
+        configuration.let {
+            it.rolesDir = "/tmp/requirements"
+            it.collectionsDir = it.rolesDir
+        }
+        val env = state.environment
+        state.execute(env.executor, env.runner).processHandler.let {
+            it.startNotify()
+            it.waitFor()
+            assertEquals(0, it.exitCode)
+        }
+    }
+
+    /**
+     * Test Docker execution in a virtualenv.
+     */
+    fun testExecDockerVenv() {
+        // Installed dependencies are local to the container here, so just make
+        // sure that execution didn't fail; `testExecLocal` verifies that
+        // dependencies are actually installed.
+        ansibleSettings.state.let {
+            it.dockerImage = ansibleImage
+            it.installType = InstallType.VIRTUALENV
+            it.ansibleLocation = "/opt/ansible"
+        }
+        configuration.let {
+            it.rolesDir = "/tmp/requirements"
+            it.collectionsDir = it.rolesDir
+        }
+        val env = state.environment
+        state.execute(env.executor, env.runner).processHandler.let {
+            it.startNotify()
+            it.waitFor()
+            assertEquals(0, it.exitCode)
         }
     }
 }
