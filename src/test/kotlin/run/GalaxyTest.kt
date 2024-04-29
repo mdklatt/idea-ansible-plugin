@@ -8,9 +8,7 @@ import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.delete
-import dev.mdklatt.idea.ansible.AnsibleSettingsComponent
 import dev.mdklatt.idea.ansible.InstallType
-import dev.mdklatt.idea.ansible.getAnsibleSettings
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import org.jdom.Element
@@ -165,19 +163,17 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
     private var tmpDir: Path? = null
     private lateinit var configuration: GalaxyRunConfiguration
     private lateinit var state: GalaxyCommandLineState
-    private lateinit var ansibleSettings: AnsibleSettingsComponent
 
     /**
      * Per-test initialization.
      */
     override fun setUp() {
         super.setUp()
-        ansibleSettings = getAnsibleSettings(project)
         val factory = GalaxyConfigurationFactory(AnsibleConfigurationType())
         val settings = RunManager.getInstance(project).createConfiguration("Galaxy Test", factory)
         configuration = (settings.configuration as GalaxyRunConfiguration).also {
             it.requirements = requirements
-            it.workDir = Path(getTestPath("/${it.requirements}")).parent.toString()
+            it.workDir = Path(getTestPath("/${requirements}")).parent.toString()
         }
         val executor = DefaultRunExecutor.getRunExecutorInstance()
         val environment = ExecutionEnvironmentBuilder.create(executor, settings).build()
@@ -227,12 +223,8 @@ internal class GalaxyCommandLineStateTest : AnsibleCommandLineStateTest() {
      * Test local execution.
      */
     fun testExecLocal() {
-        // This uses a temporary virtualenv installation (see
-        // AnsibleCommandLineStateTest).
-        ansibleSettings.state.also {
-            it.installType = InstallType.VIRTUALENV
-            it.ansibleLocation = ".venv"
-        }
+        // This uses the default test installation, which is a local Python
+        // virtualenv (see AnsibleCommandLineStateTest).
         tmpDir = createTempDirectory()
         configuration.let {
             it.rolesDir = tmpDir.toString()

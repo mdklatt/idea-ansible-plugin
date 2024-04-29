@@ -186,8 +186,9 @@ internal class PlaybookEditorTest : BasePlatformTestCase() {
 internal class PlaybookCommandLineStateTest : AnsibleCommandLineStateTest() {
 
     private val command = "ansible-playbook"
-    private val inventory = getTestPath("/hosts.yml")
-    private var playbook = getTestPath("/playbook.yml")
+    private val inventory = "hosts.yml"
+    private var playbook = "playbook.yml"
+    private lateinit var configuration: PlaybookRunConfiguration
     private lateinit var state: PlaybookCommandLineState
 
     /**
@@ -197,9 +198,10 @@ internal class PlaybookCommandLineStateTest : AnsibleCommandLineStateTest() {
         super.setUp()
         val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
         val settings = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
-        (settings.configuration as PlaybookRunConfiguration).also {
+        configuration = (settings.configuration as PlaybookRunConfiguration).also {
             it.inventory = mutableListOf(inventory)
             it.playbooks = mutableListOf(playbook)
+            it.workDir = Path(getTestPath("/${playbook}")).parent.toString()
         }
         val executor = DefaultRunExecutor.getRunExecutorInstance()
         val environment = ExecutionEnvironmentBuilder.create(executor, settings).build()
@@ -215,12 +217,11 @@ internal class PlaybookCommandLineStateTest : AnsibleCommandLineStateTest() {
     }
 
     /**
-     * Test the createProcess() method.
+     * Test local execution.
      */
-    fun testCreateProcess() {
-        // Indirectly test protected startProcess() method by executing the
-        // configuration. This uses a temporary virtualenv installation (see
-        // AnsibleCommandLineStateTest).
+    fun testExecLocal() {
+        // This uses the default test installation, which is a local Python
+        // virtualenv (see AnsibleCommandLineStateTest).
         val env = state.environment
         state.execute(env.executor, env.runner).processHandler.let {
             it.startNotify()
@@ -228,58 +229,15 @@ internal class PlaybookCommandLineStateTest : AnsibleCommandLineStateTest() {
             assertEquals(0, it.exitCode)
         }
     }
-}
-
-
-/**
- * Unit tests for the PlaybookCommandLineState class.
- */
-internal class PlaybookDockerCommandLineStateTest : AnsibleCommandLineStateTest() {
-
-    private val inventory = "/tmp/ansible/hosts.yml"
-    private var playbook = "/tmp/ansible/playbook.yml"
-    private lateinit var state: PlaybookCommandLineState
 
     /**
-     * Per-test initialization.
+     * Test Docker execution.
      */
-    override fun setUp() {
-        super.setUp()
-        getAnsibleSettings(project).state.let {
+    fun testExecDocker() {
+        ansibleSettings.state.let {
             it.dockerImage = ansibleImage
             it.installType = InstallType.SYSTEM
             it.ansibleLocation = "/opt/ansible/bin/ansible"
-            it.configFile = "/tmp/ansible/ansible.cfg"
-        }
-        val factory = PlaybookConfigurationFactory(AnsibleConfigurationType())
-        val settings = RunManager.getInstance(project).createConfiguration("Playbook Test", factory)
-        (settings.configuration as PlaybookRunConfiguration).also {
-            it.inventory = mutableListOf(inventory)
-            it.playbooks = mutableListOf(playbook)
-            it.workDir = Path(getTestPath("/playbook.yml")).parent.toString()
-        }
-        val executor = DefaultRunExecutor.getRunExecutorInstance()
-        val environment = ExecutionEnvironmentBuilder.create(executor, settings).build()
-        state = PlaybookCommandLineState(environment)
-    }
-
-    /**
-     * Test the getCommand() method.
-     */
-    fun testGetCommand() {
-        val command = "/opt/ansible/bin/ansible-playbook --inventory $inventory $playbook"
-        assertEquals(command, state.getCommand().commandLineString)
-    }
-
-    /**
-     * Test the createProcess() method.
-     */
-    fun testCreateProcess() {
-        // Indirectly test protected startProcess() method by executing the
-        // configuration.
-        getAnsibleSettings(project).state.let {
-            it.installType = InstallType.SYSTEM
-            it.ansibleLocation = "/opt/ansible/bin/ansible"
         }
         val env = state.environment
         state.execute(env.executor, env.runner).processHandler.let {
@@ -290,13 +248,11 @@ internal class PlaybookDockerCommandLineStateTest : AnsibleCommandLineStateTest(
     }
 
     /**
-     * Test the createProcess() method for a Python virtualenv installation.
+     * Test Docker execution in a virtualenv.
      */
-    fun testCreateProcessVenv() {
-        // Indirectly test protected startProcess() method by executing the
-        // configuration. This uses a temporary virtualenv installation (see
-        // AnsibleCommandLineStateTest).
+    fun testExecDockerVenv() {
         getAnsibleSettings(project).state.let {
+            it.dockerImage = ansibleImage
             it.installType = InstallType.VIRTUALENV
             it.ansibleLocation = "/opt/ansible"
         }

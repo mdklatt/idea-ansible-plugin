@@ -3,7 +3,6 @@
  */
 package dev.mdklatt.idea.ansible.run
 
-import com.intellij.openapi.util.io.toNioPath
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.mdklatt.idea.ansible.AnsibleSettingsComponent
 import dev.mdklatt.idea.ansible.AnsibleSettingsState
@@ -14,8 +13,6 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 import org.testcontainers.images.builder.ImageFromDockerfile
-import org.testcontainers.utility.DockerImageName
-import java.nio.file.Paths
 
 
 /**
@@ -78,7 +75,7 @@ internal class AnsibleConfigurationTypeTest {
  */
 internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
 
-    private lateinit var ansibleSettings: AnsibleSettingsComponent
+    protected lateinit var ansibleSettings: AnsibleSettingsComponent
 
     /**
      * Per-test initialization.
@@ -90,6 +87,7 @@ internal abstract class AnsibleCommandLineStateTest : BasePlatformTestCase() {
             // of Ansible for test execution.
             it.state.installType = InstallType.VIRTUALENV
             it.state.ansibleLocation = ".venv"
+            it.state.dockerImage = null
         }
     }
 
