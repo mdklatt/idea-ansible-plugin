@@ -1,7 +1,7 @@
 /**
  * Ansible tool settings.
  */
-package dev.mdklatt.idea.ansible
+package dev.mdklatt.idea.ansible.settings
 
 import com.intellij.openapi.components.*
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory

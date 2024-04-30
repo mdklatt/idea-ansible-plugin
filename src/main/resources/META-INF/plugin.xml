@@ -13,7 +13,7 @@
       <projectConfigurable
         id="dev.mdklatt.idea.ansible.ProjectSettingsConfigurable"
         parentId="tools"
-        instance="dev.mdklatt.idea.ansible.AnsibleSettingsConfigurable"
+        instance="dev.mdklatt.idea.ansible.settings.AnsibleSettingsConfigurable"
         displayName="Ansible"
         nonDefaultProject="true"/>
     </extensions>

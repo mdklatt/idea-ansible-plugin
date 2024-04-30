@@ -7,8 +7,8 @@ import com.intellij.execution.*
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import dev.mdklatt.idea.ansible.InstallType
-import dev.mdklatt.idea.ansible.getAnsibleSettings
+import dev.mdklatt.idea.ansible.settings.InstallType
+import dev.mdklatt.idea.ansible.settings.getAnsibleSettings
 import kotlin.test.assertContentEquals
 import kotlin.io.path.Path
 import org.jdom.Element

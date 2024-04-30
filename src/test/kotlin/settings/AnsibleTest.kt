@@ -1,7 +1,7 @@
 /**
  * Unit tests for Galaxy.kt.
  */
-package dev.mdklatt.idea.ansible
+package dev.mdklatt.idea.ansible.settings
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 

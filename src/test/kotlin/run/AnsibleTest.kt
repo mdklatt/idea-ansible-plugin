@@ -4,10 +4,10 @@
 package dev.mdklatt.idea.ansible.run
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import dev.mdklatt.idea.ansible.AnsibleSettingsComponent
-import dev.mdklatt.idea.ansible.AnsibleSettingsState
-import dev.mdklatt.idea.ansible.InstallType
-import dev.mdklatt.idea.ansible.getAnsibleSettings
+import dev.mdklatt.idea.ansible.settings.AnsibleSettingsComponent
+import dev.mdklatt.idea.ansible.settings.AnsibleSettingsState
+import dev.mdklatt.idea.ansible.settings.InstallType
+import dev.mdklatt.idea.ansible.settings.getAnsibleSettings
 import org.testcontainers.containers.GenericContainer
 import kotlin.test.Test
 import kotlin.test.assertTrue

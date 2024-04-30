@@ -16,8 +16,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.dsl.builder.*
-import dev.mdklatt.idea.ansible.InstallType
-import dev.mdklatt.idea.ansible.getAnsibleSettings
+import dev.mdklatt.idea.ansible.settings.InstallType
+import dev.mdklatt.idea.ansible.settings.getAnsibleSettings
 import dev.mdklatt.idea.common.exec.PosixCommandLine
 import org.jdom.Element
 import java.lang.RuntimeException

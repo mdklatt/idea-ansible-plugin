@@ -8,7 +8,7 @@ import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.delete
-import dev.mdklatt.idea.ansible.InstallType
+import dev.mdklatt.idea.ansible.settings.InstallType
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import org.jdom.Element
