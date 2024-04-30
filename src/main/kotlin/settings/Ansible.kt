@@ -192,6 +192,8 @@ class AnsibleSettingsConfigurable(project: Project): UiDslUnnamedConfigurable.Si
                     it.bindText(::dockerExe)
                 }
             }
+        }.let {
+            it.expanded = dockerImage.isNotBlank()
         }
     }
 
