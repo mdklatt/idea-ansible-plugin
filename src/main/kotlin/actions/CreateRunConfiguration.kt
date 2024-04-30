@@ -100,9 +100,9 @@ abstract class CreateRunConfiguration<
                 try {
                     settings.checkSettings()
                 } catch (error: RuntimeConfigurationError) {
-                    return ValidationInfo(error.message.orEmpty())
+                    return ValidationInfo(error.localizedMessage)
                 } catch (error: RuntimeConfigurationWarning) {
-                    return ValidationInfo(error.message.orEmpty()).asWarning().withOKEnabled()
+                    return ValidationInfo(error.localizedMessage).asWarning().withOKEnabled()
                 }
                 return null
             }
