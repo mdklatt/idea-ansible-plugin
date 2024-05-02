@@ -2,29 +2,24 @@
 
 # Ansible Plugin Changelog
 
-## [Unreleased]
+## [2.0.0] - 2024-05-01
 
 ### Added
+- Added project-level settings.
+- Added context menu actions for creating run configurations.
+- Added support for Ansible in Docker images.
 - Added dark theme logo.
 
 ### Changed
+- Changed run configuration options to reflect project-level settings.
 
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
-
-## [1.2.0] - 2023-11-26
+## 1.2.0 - 2023-11-26
 
 ### Added
 - Added Ansible config file option to all run configurations.
 
 ### Changed
-- Bumped minimum IDEA version to 2023.1.
+- Changed minimum IDEA version to 2023.1.
 
 ### Fixed
 - Fixed working directory handling in Galaxy run configuration.
